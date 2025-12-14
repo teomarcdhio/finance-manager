@@ -1,0 +1,47 @@
+services:
+  # --- Database ---
+  db:
+    image: postgres:16-alpine
+    container_name: nivetek-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password123}
+      POSTGRES_DB: ${DB_NAME:-nivetek_finance}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # --- Backend (FastAPI) ---
+  backend:
+    build: 
+      context: ./backend
+    container_name: nivetek-backend
+    restart: always
+    environment:
+      POSTGRES_SERVER: db
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password123}
+      POSTGRES_DB: ${DB_NAME:-nivetek_finance}
+      JWT_SECRET: ${JWT_SECRET:-changethis}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  # --- Frontend (Next.js) ---
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #   container_name: nivetek-frontend
+  #   restart: always
+  #   environment:
+  #     NEXT_PUBLIC_API_URL: http://localhost:8000
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - backend
+
+volumes:
+  postgres_data:

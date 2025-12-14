@@ -1,0 +1,7 @@
+name,type,amount,target_account,account_id,date,recurrency
+Grocery Shopping,payment,150.50,Supermarket,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-01,
+Salary,deposit,5000.00,Employer Inc,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-01,
+Internet Bill,payment,60.00,ISP Provider,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-05,
+Coffee,payment,4.50,Local Cafe,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-06,
+Freelance Work,deposit,500.00,Client X,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-10,
+Netflix,payment,15.99,Netflix,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-15,"{""frequency"": ""monthly""}"
