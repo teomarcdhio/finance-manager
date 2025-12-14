@@ -1,103 +1,87 @@
-# Nivetek Finance Manager - Technical Specification
+# Finance Manager - Backend
 
-## 1. Project Overview
-A lightweight personal finance management system featuring a FastAPI backend and a Next.js frontend. The goal is to track accounts, manage recurring transactions, and visualize spending patterns.
-
----
-
-## 2. Tech Stack
-
-### Backend
-- **Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Python 3.11+)
+## 1. Tech Stack
+- **Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+)
 - **Package Manager:** [uv](https://github.com/astral-sh/uv)
 - **Database:** [PostgreSQL](https://www.postgresql.org/)
 - **ORM:** SQLModel (Integration of SQLAlchemy + Pydantic)
 - **Authentication:** OAuth2 with JWT (JSON Web Tokens)
 
-### Frontend
-- **Framework:** [Next.js](https://nextjs.org/) (App Router)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components:** [Shadcn/UI](https://ui.shadcn.com/)
-- **Data Visualization:** [Tremor](https://www.tremor.so/)
-- **Icons:** Lucide-react
+## 2. Data Models
 
----
+### User
+*   `id`: UUID
+*   `username`: String (Unique)
+*   `email`: String (Unique)
+*   `permission`: Enum (`admin`, `editor`, `readonly`)
 
-## 3. Data Models & Validation
+### Account
+*   `id`: UUID
+*   `name`: String
+*   `initial_balance`: Decimal
+*   `balance_date`: Date
+*   `user_id`: UUID (Owner)
 
-### User Model
-| Field | Type | Constraints |
-| :--- | :--- | :--- |
-| `id` | UUID | Primary Key |
-| `username` | String | Unique, Required |
-| `email` | String | Unique, Email Format |
-| `password` | String | Hashed, Min 7 chars, 1 number, 1 special char |
-| `permission` | Enum | `admin`, `editor`, `readonly` |
-| `label` | String | Optional metadata |
+### Transaction
+*   `id`: UUID
+*   `name`: String
+*   `type`: Enum (`payment`, `withdraw`, `deposit`, `interest`, `transfer`)
+*   `amount`: Decimal
+*   `target_account`: String
+*   `account_id`: UUID
+*   `date`: Date
+*   `recurrency`: JSON (Optional)
 
-### Account Model
-| Field | Type | Constraints |
-| :--- | :--- | :--- |
-| `id` | UUID | Primary Key |
-| `name` | String | Required |
-| `account_number` | String | Optional |
-| `bank_name` | String | Required |
-| `initial_balance` | Decimal | Required |
-| `balance_date` | Date | Required |
-| `user_id` | UUID | Foreign Key (Owner) |
+## 3. API Endpoints
 
-### Transaction Model
-| Field | Type | Constraints |
-| :--- | :--- | :--- |
-| `id` | UUID | Primary Key |
-| `name` | String | Required |
-| `type` | Enum | `payment`, `withdraw`, `deposit`, `interest`, etc. |
-| `amount` | Decimal | Required |
-| `target_account` | String | Required (Vendor/Entity name) |
-| `account_id` | UUID | Foreign Key (Linked Bank Account) |
-| `date` | Date | Required |
-| `recurrency` | JSON/Object | Optional: `{frequency: string, occurrences: int, end_date: date}` |
+### Authentication
+*   `POST /api/v1/login/access-token`: Get JWT access token.
 
----
+### Users
+*   `GET /api/v1/users/`: List users (Admin only).
+*   `POST /api/v1/users/`: Create user (Admin only).
+*   `GET /api/v1/users/me`: Get current user.
+*   `PUT /api/v1/users/{user_id}`: Update user (Admin only).
+*   `DELETE /api/v1/users/{user_id}`: Delete user (Admin only).
 
-## 4. Backend Logic Requirements
+### Accounts
+*   `GET /api/v1/accounts/`: List accounts.
+*   `POST /api/v1/accounts/`: Create account.
+*   `GET /api/v1/accounts/{account_id}`: Get account details.
+*   `PUT /api/v1/accounts/{account_id}`: Update account.
+*   `DELETE /api/v1/accounts/{account_id}`: Delete account.
+*   `GET /api/v1/accounts/{account_id}/balance`: Get calculated balance at a specific date.
+    *   Query Params: `target_date` (default: today).
+*   `GET /api/v1/accounts/{account_id}/transactions/sum`: Get net total of all transactions in a date range.
+    *   Query Params: `start_date`, `end_date`.
+*   `GET /api/v1/accounts/{account_id}/transactions/type`: List transactions by type.
+    *   Query Params: `type` (required), `start_date`, `end_date`.
+*   `GET /api/v1/accounts/{account_id}/transactions/type/sum`: Get total amount for a specific transaction type.
+    *   Query Params: `type` (required), `start_date`, `end_date`.
+*   `GET /api/v1/accounts/{account_id}/transactions/target`: List transactions by target account (case-insensitive).
+    *   Query Params: `target_account` (required), `start_date`, `end_date`.
+*   `GET /api/v1/accounts/{account_id}/transactions/target/sum`: Get total amount for a specific target account.
+    *   Query Params: `target_account` (required), `start_date`, `end_date`.
 
-### Authentication & Permissions
-- **RBAC (Role Based Access Control):** - `admin`: Full system access.
-    - `editor`: Can modify Accounts/Transactions but cannot manage Users.
-    - `readonly`: Can only perform GET requests.
-- Standardized API responses:
-    - Success: `{ "status": "success", "message": "...", "data": {} }`
-    - Error: `{ "status": "error", "message": "Reason for denial/failure" }`
+### Transactions
+*   `GET /api/v1/transactions/`: List transactions.
+    *   Query Params: `account_id`, `start_date`, `end_date`.
+*   `POST /api/v1/transactions/`: Create transaction.
+*   `POST /api/v1/transactions/import`: Bulk import from CSV.
+*   `PUT /api/v1/transactions/{transaction_id}`: Update transaction.
+*   `DELETE /api/v1/transactions/{transaction_id}`: Delete transaction.
 
-### Transaction Recurrence
-- If a transaction has a `recurrency` object, the system must calculate future instances.
-- Implementation: A background task or service layer that projects these transactions into the database based on the `end_date` or `repetitions` limit.
+## 4. Development
 
-### Bulk Import
-- **Endpoint:** `POST /api/v1/transactions/import`
-- **Logic:** Accepts CSV file. Headers must match Transaction model fields. 
-- Validation: If one row fails (e.g., invalid date format), the entire batch should roll back and return a list of specific row errors.
+### Running Locally
+The backend is containerized. Use Docker Compose from the root directory:
+```bash
+docker compose up --build backend
+```
 
----
+### Running Tests
+(Add instructions for running tests if applicable)
 
-## 5. Frontend Requirements
-
-### Layout & Navigation
-- **Persistent Shell:** - **Top Bar:** App Name (Left), Global Date Range Picker (Center), User Profile/Menu (Right).
-    - **Sidebar:** - Dashboard Link
-        - Accounts (Collapsible list of all active accounts)
-        - Users (Admin only)
-        - Settings (Backup/Export)
-
-### Dashboard Components
-- **Global Filter:** Changing the date range in the Top Bar refreshes all child components via React Context.
-- **Charts:** - Tremor `AreaChart` for balance trends over the selected period.
-    - Tremor `DonutChart` for categorical spending.
-- **Tables:** Shadcn `DataTable` with sorting, filtering, and pagination for transactions.
-
-### Pages
-1. **Login:** Username/Password form + "Forgot Password" placeholder.
 2. **Dashboard:** Overview of total net worth and recent activity.
 3. **Account Detail:** Specific analytics for one account + its transaction history.
 4. **User Management:** CRUD table for Admins to manage staff/family access.
