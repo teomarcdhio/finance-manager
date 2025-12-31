@@ -5,9 +5,10 @@ export interface Transaction {
   name: string;
   type: string;
   amount: number;
-  target_account: string;
+  target_account_id?: string;
   account_id: string;
   date: string;
+  category_id?: string;
   recurrency?: any;
 }
 

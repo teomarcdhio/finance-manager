@@ -5,6 +5,15 @@ export interface LoginResponse {
   token_type: string;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  full_name?: string;
+  is_active: boolean;
+  is_superuser: boolean;
+  role: string;
+}
+
 export const authService = {
   login: async (username: string, password: string): Promise<LoginResponse> => {
     const params = new URLSearchParams();
@@ -27,5 +36,10 @@ export const authService = {
   isAuthenticated: () => {
     if (typeof window === 'undefined') return false;
     return !!localStorage.getItem('token');
+  },
+
+  getMe: async (): Promise<User> => {
+    const response = await api.get<User>('/users/me');
+    return response.data;
   }
 };

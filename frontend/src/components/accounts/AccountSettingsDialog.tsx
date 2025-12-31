@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Loader2, Settings } from "lucide-react"
+import { Loader2, Settings, Pencil } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -110,8 +110,8 @@ export function AccountSettingsDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline">
-          <Settings className="mr-2 h-4 w-4" />
-          Settings
+          <Pencil className="mr-2 h-4 w-4" />
+          Edit
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

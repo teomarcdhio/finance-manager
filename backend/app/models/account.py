@@ -12,6 +12,7 @@ class AccountBase(SQLModel):
     balance_date: date
     currency: str = Field(default="USD")
     user_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
+    category_id: Optional[UUID] = Field(default=None, foreign_key="category.id")
 
 class Account(AccountBase, table=True):
     id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
@@ -27,6 +28,7 @@ class AccountUpdate(AccountBase):
     balance_date: Optional[date] = None
     currency: Optional[str] = None
     user_id: Optional[UUID] = None
+    category_id: Optional[UUID] = None
 
 class AccountRead(AccountBase):
     id: UUID

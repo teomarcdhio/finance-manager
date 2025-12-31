@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/popover"
 import { accountService, Account } from "@/services/accounts"
 import { transactionService } from "@/services/transactions"
+import { categoryService, Category } from "@/services/categories"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -47,11 +48,10 @@ const formSchema = z.object({
   amount: z.string().refine((val) => !isNaN(Number(val)) && Number(val) !== 0, {
     message: "Amount must be a valid non-zero number",
   }),
-  target_account: z.string().min(2, "Target account must be at least 2 characters"),
+  target_account_id: z.string().uuid("Please select a target account"),
   account_id: z.string().uuid("Please select an account"),
-  date: z.date({
-    required_error: "A date is required",
-  }),
+  category_id: z.string().optional(),
+  date: z.date(),
 })
 
 interface CreateTransactionDialogProps {
@@ -65,6 +65,7 @@ export function CreateTransactionDialog({
 }: CreateTransactionDialogProps) {
   const [open, setOpen] = useState(false)
   const [accounts, setAccounts] = useState<Account[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -73,8 +74,9 @@ export function CreateTransactionDialog({
       name: "",
       type: "payment",
       amount: "",
-      target_account: "",
+      target_account_id: "",
       account_id: defaultAccountId || "",
+      category_id: "",
       date: new Date(),
     },
   })
@@ -87,18 +89,34 @@ export function CreateTransactionDialog({
   }, [defaultAccountId, form])
 
   useEffect(() => {
-    const fetchAccounts = async () => {
+    const fetchData = async () => {
       try {
-        const data = await accountService.getAccounts()
-        setAccounts(data)
+        const [accountsData, destinationAccountsData, categoriesData] = await Promise.all([
+          accountService.getAccounts(),
+          accountService.getDestinationAccounts(),
+          categoryService.getCategories()
+        ])
+        setAccounts([...accountsData, ...destinationAccountsData])
+        setCategories(categoriesData)
       } catch (error) {
-        console.error("Failed to fetch accounts", error)
+        console.error("Failed to fetch data", error)
       }
     }
     if (open) {
-      fetchAccounts()
+      fetchData()
     }
   }, [open])
+
+  // Watch target account to auto-select category
+  const targetAccountId = form.watch("target_account_id")
+  useEffect(() => {
+    if (targetAccountId) {
+      const targetAccount = accounts.find(a => a.id === targetAccountId)
+      if (targetAccount && targetAccount.category_id) {
+        form.setValue("category_id", targetAccount.category_id)
+      }
+    }
+  }, [targetAccountId, accounts, form])
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -106,6 +124,7 @@ export function CreateTransactionDialog({
       await transactionService.createTransaction({
         ...values,
         amount: Number(values.amount),
+        category_id: values.category_id === "none" || !values.category_id ? undefined : values.category_id,
         date: format(values.date, "yyyy-MM-dd"),
       })
       setOpen(false)
@@ -220,13 +239,50 @@ export function CreateTransactionDialog({
 
             <FormField
               control={form.control}
-              name="target_account"
+              name="target_account_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Target / Payee</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Target account or payee" {...field} />
-                  </FormControl>
+                  <FormLabel>Target Account</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select target account" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="category_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

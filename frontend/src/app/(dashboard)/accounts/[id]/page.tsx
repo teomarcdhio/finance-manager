@@ -15,6 +15,7 @@ import {
 import { Plus } from "lucide-react"
 import { accountService, Account } from "@/services/accounts"
 import { transactionService, Transaction } from "@/services/transactions"
+import { categoryService, Category } from "@/services/categories"
 import { authService } from "@/services/auth"
 import { CreateTransactionDialog } from "@/components/transactions/CreateTransactionDialog"
 import { EditTransactionDialog } from "@/components/transactions/EditTransactionDialog"
@@ -35,6 +36,35 @@ export default function AccountPage() {
   const [page, setPage] = useState(1)
   const pageSize = 100
   const { date } = useDateRange()
+  const [accountsMap, setAccountsMap] = useState<Record<string, string>>({})
+  const [categoriesMap, setCategoriesMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [accountsData, destinationAccountsData, categoriesData] = await Promise.all([
+          accountService.getAccounts(),
+          accountService.getDestinationAccounts(),
+          categoryService.getCategories()
+        ])
+        
+        const accMap: Record<string, string> = {}
+        ;[...accountsData, ...destinationAccountsData].forEach(acc => {
+          accMap[acc.id] = acc.name
+        })
+        setAccountsMap(accMap)
+
+        const catMap: Record<string, string> = {}
+        categoriesData.forEach(cat => {
+          catMap[cat.id] = cat.name
+        })
+        setCategoriesMap(catMap)
+      } catch (error) {
+        console.error("Failed to fetch data for mapping", error)
+      }
+    }
+    fetchData()
+  }, [])
 
   const handleSelectAll = (checked: boolean | "indeterminate") => {
     if (checked === true) {
@@ -192,6 +222,8 @@ export default function AccountPage() {
                 </TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead>Target Account</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
@@ -208,7 +240,9 @@ export default function AccountPage() {
                   </TableCell>
                   <TableCell>{format(new Date(transaction.date), "dd-MM-yyyy")}</TableCell>
                   <TableCell>{transaction.name}</TableCell>
+                  <TableCell>{transaction.target_account_id ? accountsMap[transaction.target_account_id] || 'Unknown' : '-'}</TableCell>
                   <TableCell className="capitalize">{transaction.type}</TableCell>
+                  <TableCell>{transaction.category_id ? categoriesMap[transaction.category_id] || 'Unknown' : '-'}</TableCell>
                   <TableCell className={`text-right ${transaction.amount > 0 ? 'text-green-600' : ''}`}>
                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency || 'USD' }).format(transaction.amount)}
                   </TableCell>
@@ -232,7 +266,7 @@ export default function AccountPage() {
               ))}
               {transactions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No transactions found for the selected period
                   </TableCell>
                 </TableRow>

@@ -1,8 +1,10 @@
 from typing import Any, List, Optional
 from datetime import date
 from uuid import UUID
+from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
 from sqlmodel import select
 import csv
 import io
@@ -43,6 +45,7 @@ async def read_transactions(
         if end_date:
             query = query.where(Transaction.date <= end_date)
             
+        query = query.order_by(Transaction.date.desc())
         query = query.offset(skip).limit(limit)
             
         result = await db.execute(query)
@@ -74,6 +77,13 @@ async def create_transaction(
             raise HTTPException(status_code=404, detail="Account not found")
         if account.user_id != current_user.id and current_user.permission != UserRole.ADMIN:
             raise HTTPException(status_code=400, detail="Not enough permissions")
+
+        # Auto-assign category from target account if not provided
+        if not transaction_in.category_id and transaction_in.target_account_id:
+            result = await db.execute(select(Account).where(Account.id == transaction_in.target_account_id))
+            target_account = result.scalars().first()
+            if target_account and target_account.category_id:
+                transaction_in.category_id = target_account.category_id
 
         transaction = Transaction.model_validate(transaction_in)
         
@@ -118,14 +128,53 @@ async def import_transactions(
         content = await file.read()
         decoded_content = content.decode("utf-8")
         csv_reader = csv.DictReader(io.StringIO(decoded_content))
+        rows = list(csv_reader)
         
+        # Process destination accounts
+        target_account_names = set()
+        for row in rows:
+            if row.get("target_account"):
+                target_account_names.add(row["target_account"])
+        
+        target_account_map = {}
+        for name in target_account_names:
+            # Check if exists (case-insensitive)
+            query = select(Account).where(
+                func.lower(Account.name) == func.lower(name),
+                Account.user_id == None
+            )
+            result = await db.execute(query)
+            account = result.scalars().first()
+            
+            if not account:
+                # Create new destination account
+                account = Account(
+                    name=name,
+                    initial_balance=Decimal(0),
+                    balance_date=date.today(),
+                    currency="USD",
+                    user_id=None
+                )
+                db.add(account)
+                await db.commit()
+                await db.refresh(account)
+            
+            target_account_map[name] = account.id
+
         transactions_to_create = []
         errors = []
         
         row_index = 0
-        for row in csv_reader:
+        for row in rows:
             row_index += 1
             try:
+                # Handle target_account mapping
+                if row.get("target_account"):
+                    target_name = row["target_account"]
+                    if target_name in target_account_map:
+                        row["target_account_id"] = str(target_account_map[target_name])
+                    del row["target_account"]
+
                 # Check account ownership
                 row_account_id = row.get("account_id")
                 if not row_account_id:

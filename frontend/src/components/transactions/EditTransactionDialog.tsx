@@ -49,11 +49,9 @@ const formSchema = z.object({
   amount: z.string().refine((val) => !isNaN(Number(val)) && Number(val) !== 0, {
     message: "Amount must be a valid non-zero number",
   }),
-  target_account: z.string().min(2, "Target account must be at least 2 characters"),
+  target_account_id: z.string().uuid("Please select a target account"),
   account_id: z.string().uuid("Please select an account"),
-  date: z.date({
-    required_error: "A date is required",
-  }),
+  date: z.date(),
 })
 
 interface EditTransactionDialogProps {
@@ -75,7 +73,7 @@ export function EditTransactionDialog({
       name: transaction.name,
       type: transaction.type as any,
       amount: Math.abs(transaction.amount).toString(),
-      target_account: transaction.target_account,
+      target_account_id: transaction.target_account_id || "",
       account_id: transaction.account_id,
       date: new Date(transaction.date),
     },
@@ -84,8 +82,11 @@ export function EditTransactionDialog({
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const data = await accountService.getAccounts()
-        setAccounts(data)
+        const [accountsData, destinationAccountsData] = await Promise.all([
+          accountService.getAccounts(),
+          accountService.getDestinationAccounts()
+        ])
+        setAccounts([...accountsData, ...destinationAccountsData])
       } catch (error) {
         console.error("Failed to fetch accounts", error)
       }
@@ -101,7 +102,7 @@ export function EditTransactionDialog({
       name: transaction.name,
       type: transaction.type as any,
       amount: Math.abs(transaction.amount).toString(),
-      target_account: transaction.target_account,
+      target_account_id: transaction.target_account_id || "",
       account_id: transaction.account_id,
       date: new Date(transaction.date),
     })
@@ -123,7 +124,7 @@ export function EditTransactionDialog({
         name: values.name,
         type: values.type,
         amount: amount,
-        target_account: values.target_account,
+        target_account_id: values.target_account_id,
         account_id: values.account_id,
         date: format(values.date, "yyyy-MM-dd"),
       })
@@ -249,13 +250,24 @@ export function EditTransactionDialog({
 
             <FormField
               control={form.control}
-              name="target_account"
+              name="target_account_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Target / Payee</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Supermarket / Employer" {...field} />
-                  </FormControl>
+                  <FormLabel>Target Account</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select target account" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

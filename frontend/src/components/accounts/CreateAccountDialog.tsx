@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Loader2, Plus, Pencil, AlertCircle } from "lucide-react"
+import { Loader2, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,11 +15,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog"
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert"
 import {
   Form,
   FormControl,
@@ -36,30 +31,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { accountService, Account } from "@/services/accounts"
+import { accountService } from "@/services/accounts"
 import { categoryService, Category } from "@/services/categories"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  account_number: z.string().optional(),
-  bank_name: z.string().optional(),
+  bank_name: z.string().min(2, "Bank name must be at least 2 characters"),
+  account_number: z.string().min(2, "Account number is required"),
   category_id: z.string().optional(),
 })
 
-interface DestinationAccountDialogProps {
-  account?: Account
+interface CreateAccountDialogProps {
   onSuccess: () => void
 }
 
-export function DestinationAccountDialog({ 
-  account,
-  onSuccess 
-}: DestinationAccountDialogProps) {
+export function CreateAccountDialog({ onSuccess }: CreateAccountDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
-  const isEdit = !!account
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -79,55 +68,27 @@ export function DestinationAccountDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      account_number: "",
       bank_name: "",
+      account_number: "",
       category_id: "",
     },
   })
 
-  useEffect(() => {
-    if (account) {
-      form.reset({
-        name: account.name,
-        account_number: account.account_number || "",
-        bank_name: account.bank_name || "",
-        category_id: account.category_id || "",
-      })
-    } else {
-      form.reset({
-        name: "",
-        account_number: "",
-        bank_name: "",
-        category_id: "",
-      })
-    }
-    setError(null)
-  }, [account, form, open])
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true)
-      setError(null)
-      if (isEdit && account) {
-        await accountService.updateAccount(account.id, {
-          ...values,
-          category_id: values.category_id === "none" ? null : values.category_id
-        })
-      } else {
-        await accountService.createDestinationAccount({
-          ...values,
-          category_id: values.category_id === "none" ? null : values.category_id,
-          initial_balance: 0,
-          balance_date: new Date().toISOString().split('T')[0],
-          currency: "USD", // Default currency
-        })
-      }
+      await accountService.createAccount({
+        ...values,
+        category_id: values.category_id === "none" ? null : values.category_id,
+        initial_balance: 0,
+        balance_date: new Date().toISOString().split('T')[0],
+        currency: "USD", // Default currency
+      })
       setOpen(false)
+      form.reset()
       onSuccess()
-    } catch (error: any) {
-      console.error("Failed to save account", error)
-      const errorMessage = error.response?.data?.detail || "Failed to save account. Please try again."
-      setError(errorMessage)
+    } catch (error) {
+      console.error("Failed to create account", error)
     } finally {
       setLoading(false)
     }
@@ -136,30 +97,15 @@ export function DestinationAccountDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {isEdit ? (
-          <Button variant="ghost" size="icon">
-            <Pencil className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Account
-          </Button>
-        )}
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          New Account
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Destination Account" : "Add Destination Account"}</DialogTitle>
+          <DialogTitle>Create New Account</DialogTitle>
         </DialogHeader>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -167,22 +113,9 @@ export function DestinationAccountDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Account Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Account Name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="account_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Account Number (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Account Number" {...field} />
+                    <Input placeholder="e.g. Main Checking" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -193,9 +126,22 @@ export function DestinationAccountDialog({
               name="bank_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bank Name (Optional)</FormLabel>
+                  <FormLabel>Bank Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Chase, Bank of America, etc." {...field} />
+                    <Input placeholder="e.g. Chase" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="account_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Account Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123456789" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -229,7 +175,7 @@ export function DestinationAccountDialog({
             <DialogFooter>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save
+                Create Account
               </Button>
             </DialogFooter>
           </form>

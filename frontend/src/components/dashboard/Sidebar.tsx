@@ -10,7 +10,8 @@ import {
   Settings, 
   User, 
   Wallet,
-  Landmark
+  Landmark,
+  Tags
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -103,6 +104,13 @@ export function Sidebar() {
             </Link>
           </Button>
 
+          <Button variant="ghost" className="justify-start w-full" asChild>
+            <Link href="/categories">
+              <Tags className="mr-2 h-4 w-4" />
+              Categories
+            </Link>
+          </Button>
+
           <Button variant="ghost" className="justify-start">
             <User className="mr-2 h-4 w-4" />
             User Management
@@ -130,9 +138,11 @@ export function Sidebar() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+            <DropdownMenuItem asChild>
+              <Link href="/settings" className="cursor-pointer w-full flex items-center">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-red-600" onClick={handleLogout}>

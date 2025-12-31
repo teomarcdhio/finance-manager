@@ -10,6 +10,7 @@ export interface Account {
   balance_date: string;
   currency: string;
   user_id: string | null;
+  category_id?: string | null;
 }
 
 export const accountService = {
@@ -28,6 +29,11 @@ export const accountService = {
     return response.data;
   },
 
+  createAccount: async (data: Partial<Account>): Promise<Account> => {
+    const response = await api.post<Account>('/accounts/', data);
+    return response.data;
+  },
+
   getAccount: async (id: string, endDate?: string): Promise<Account> => {
     const params = endDate ? { end_date: endDate } : {};
     const response = await api.get<Account>(`/accounts/${id}`, { params });
@@ -41,5 +47,20 @@ export const accountService = {
 
   deleteAccount: async (id: string): Promise<void> => {
     await api.delete(`/accounts/${id}`);
+  },
+
+  deleteDestinationAccount: async (id: string): Promise<void> => {
+    await api.delete(`/accounts/destination/${id}`);
+  },
+
+  importDestinationAccounts: async (file: File): Promise<{ status: string; message: string; errors?: string[] }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/accounts/destination/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
   },
 };

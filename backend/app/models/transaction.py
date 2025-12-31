@@ -18,10 +18,11 @@ class TransactionBase(SQLModel):
     name: str
     type: TransactionType
     amount: Decimal
-    target_account: str
+    target_account_id: Optional[UUID] = Field(default=None, foreign_key="account.id")
     account_id: UUID = Field(foreign_key="account.id")
     date: dt_date
     recurrency: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSONB))
+    category_id: Optional[UUID] = Field(default=None, foreign_key="category.id")
 
 class Transaction(TransactionBase, table=True):
     id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
@@ -33,10 +34,11 @@ class TransactionUpdate(SQLModel):
     name: Optional[str] = None
     type: Optional[TransactionType] = None
     amount: Optional[Decimal] = None
-    target_account: Optional[str] = None
+    target_account_id: Optional[UUID] = None
     account_id: Optional[UUID] = None
     date: Optional[dt_date] = None
     recurrency: Optional[Dict[str, Any]] = None
+    category_id: Optional[UUID] = None
 
 class TransactionRead(TransactionBase):
     id: UUID

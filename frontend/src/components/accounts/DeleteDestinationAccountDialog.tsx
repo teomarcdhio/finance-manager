@@ -28,22 +28,28 @@ export function DeleteDestinationAccountDialog({
 }: DeleteDestinationAccountDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleDelete = async () => {
     try {
       setLoading(true)
-      await accountService.deleteAccount(account.id)
+      setError(null)
+      await accountService.deleteDestinationAccount(account.id)
       setOpen(false)
       onSuccess()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete account", error)
+      setError(error.response?.data?.detail || "Failed to delete account")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog open={open} onOpenChange={(val) => {
+      setOpen(val)
+      if (!val) setError(null)
+    }}>
       <AlertDialogTrigger asChild>
         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
           <Trash2 className="h-4 w-4" />
@@ -56,6 +62,11 @@ export function DeleteDestinationAccountDialog({
             This action cannot be undone. This will permanently delete the account
             "{account.name}" and all its associated data.
           </AlertDialogDescription>
+          {error && (
+            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md mt-2">
+              {error}
+            </div>
+          )}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
