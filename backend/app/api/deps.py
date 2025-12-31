@@ -28,8 +28,9 @@ async def get_current_user(
         token_data = payload.get("sub")
     except (JWTError, ValidationError):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     
     # In a real app, you would fetch the user from DB.

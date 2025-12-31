@@ -14,6 +14,44 @@ from app.models.user import UserRole
 
 router = APIRouter()
 
+@router.get("/destination", response_model=List[AccountRead])
+async def read_destination_accounts(
+    db: AsyncSession = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Retrieve destination accounts (accounts without user_id).
+    """
+    try:
+        query = select(Account).where(Account.user_id == None).offset(skip).limit(limit)
+        result = await db.execute(query)
+        accounts = result.scalars().all()
+        return accounts
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/destination", response_model=AccountRead)
+async def create_destination_account(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    account_in: AccountCreate,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Create new destination account.
+    """
+    try:
+        # Ensure user_id is None
+        account = Account.model_validate(account_in, update={"user_id": None})
+        db.add(account)
+        await db.commit()
+        await db.refresh(account)
+        return account
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/", response_model=List[AccountRead])
 async def read_accounts(
     db: AsyncSession = Depends(deps.get_db),
@@ -32,7 +70,19 @@ async def read_accounts(
             
         result = await db.execute(query)
         accounts = result.scalars().all()
-        return accounts
+        
+        account_reads = []
+        for account in accounts:
+            # Calculate balance for each account
+            query_sum = select(func.sum(Transaction.amount)).where(Transaction.account_id == account.id)
+            result_sum = await db.execute(query_sum)
+            total_transactions = result_sum.scalar() or Decimal(0)
+            
+            account_read = AccountRead.model_validate(account)
+            account_read.current_balance = account.initial_balance + total_transactions
+            account_reads.append(account_read)
+            
+        return account_reads
     except HTTPException:
         raise
     except Exception as e:
@@ -68,6 +118,7 @@ async def read_account(
     db: AsyncSession = Depends(deps.get_db),
     account_id: UUID,
     current_user: User = Depends(deps.get_current_active_user),
+    end_date: Optional[date_type] = Query(None),
 ) -> Any:
     """
     Get account by ID.
@@ -77,9 +128,21 @@ async def read_account(
         account = result.scalars().first()
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
-        if account.user_id != current_user.id and current_user.permission != UserRole.ADMIN:
+        if account.user_id is not None and account.user_id != current_user.id and current_user.permission != UserRole.ADMIN:
             raise HTTPException(status_code=400, detail="Not enough permissions")
-        return account
+            
+        # Calculate balance
+        query = select(func.sum(Transaction.amount)).where(Transaction.account_id == account_id)
+        if end_date:
+            query = query.where(Transaction.date <= end_date)
+            
+        result_sum = await db.execute(query)
+        total_transactions = result_sum.scalar() or Decimal(0)
+        
+        account_read = AccountRead.model_validate(account)
+        account_read.current_balance = account.initial_balance + total_transactions
+        
+        return account_read
     except HTTPException:
         raise
     except Exception as e:
@@ -101,7 +164,7 @@ async def update_account(
         account = result.scalars().first()
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
-        if account.user_id != current_user.id and current_user.permission != UserRole.ADMIN:
+        if account.user_id is not None and account.user_id != current_user.id and current_user.permission != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Not enough permissions")
 
         update_data = account_in.model_dump(exclude_unset=True)
@@ -132,7 +195,7 @@ async def delete_account(
         account = result.scalars().first()
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
-        if account.user_id != current_user.id and current_user.permission != UserRole.ADMIN:
+        if account.user_id is not None and account.user_id != current_user.id and current_user.permission != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Not enough permissions")
 
         await db.delete(account)

@@ -9,7 +9,7 @@ import io
 import json
 
 from app.api import deps
-from app.models import Transaction, TransactionCreate, TransactionRead, TransactionUpdate, Account, User
+from app.models import Transaction, TransactionCreate, TransactionRead, TransactionUpdate, Account, User, TransactionType
 from app.models.user import UserRole
 from app.services.recurrence import process_recurrence
 
@@ -76,6 +76,17 @@ async def create_transaction(
             raise HTTPException(status_code=400, detail="Not enough permissions")
 
         transaction = Transaction.model_validate(transaction_in)
+        
+        # Enforce sign based on transaction type
+        if transaction.type in [TransactionType.PAYMENT, TransactionType.WITHDRAW, TransactionType.TRANSFER]:
+            # These should be negative (outgoing)
+            if transaction.amount > 0:
+                transaction.amount = -transaction.amount
+        elif transaction.type in [TransactionType.DEPOSIT, TransactionType.INTEREST]:
+            # These should be positive (incoming)
+            if transaction.amount < 0:
+                transaction.amount = -transaction.amount
+
         db.add(transaction)
         
         # Process recurrence
@@ -93,6 +104,7 @@ async def create_transaction(
 @router.post("/import")
 async def import_transactions(
     file: UploadFile = File(...),
+    account_id: Optional[UUID] = Query(None),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
@@ -115,10 +127,13 @@ async def import_transactions(
             row_index += 1
             try:
                 # Check account ownership
-                account_id = row.get("account_id")
-                if not account_id:
-                    errors.append(f"Row {row_index}: Missing account_id")
-                    continue
+                row_account_id = row.get("account_id")
+                if not row_account_id:
+                    if account_id:
+                        row["account_id"] = str(account_id)
+                    else:
+                        errors.append(f"Row {row_index}: Missing account_id")
+                        continue
 
                 # Handle recurrency JSON string
                 if row.get("recurrency"):
@@ -153,6 +168,17 @@ async def import_transactions(
         try:
             for transaction_in in transactions_to_create:
                 transaction = Transaction.model_validate(transaction_in)
+                
+                # Enforce sign based on transaction type
+                if transaction.type in [TransactionType.PAYMENT, TransactionType.WITHDRAW, TransactionType.TRANSFER]:
+                    # These should be negative (outgoing)
+                    if transaction.amount > 0:
+                        transaction.amount = -transaction.amount
+                elif transaction.type in [TransactionType.DEPOSIT, TransactionType.INTEREST]:
+                    # These should be positive (incoming)
+                    if transaction.amount < 0:
+                        transaction.amount = -transaction.amount
+
                 db.add(transaction)
             await db.commit()
         except Exception as e:
@@ -241,6 +267,49 @@ async def delete_transaction(
         await db.delete(transaction)
         await db.commit()
         return transaction
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/bulk-delete")
+async def bulk_delete_transactions(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    transaction_ids: List[UUID],
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Delete multiple transactions.
+    """
+    try:
+        if current_user.permission == UserRole.READONLY:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+
+        # Fetch all transactions to verify ownership
+        query = select(Transaction).where(Transaction.id.in_(transaction_ids))
+        result = await db.execute(query)
+        transactions = result.scalars().all()
+
+        if not transactions:
+            return {"message": "No transactions found"}
+
+        # Verify ownership for all
+        account_ids = {t.account_id for t in transactions}
+        query = select(Account).where(Account.id.in_(account_ids))
+        result = await db.execute(query)
+        accounts = result.scalars().all()
+        
+        # Check if user owns all accounts involved
+        for account in accounts:
+             if account.user_id != current_user.id and current_user.permission != UserRole.ADMIN:
+                raise HTTPException(status_code=403, detail="Not enough permissions")
+
+        for transaction in transactions:
+            await db.delete(transaction)
+            
+        await db.commit()
+        return {"message": f"Deleted {len(transactions)} transactions"}
     except HTTPException:
         raise
     except Exception as e:

@@ -1,7 +1,57 @@
 name,type,amount,target_account,account_id,date,recurrency
-Grocery Shopping,payment,150.50,Supermarket,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-01,
-Salary,deposit,5000.00,Employer Inc,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-01,
-Internet Bill,payment,60.00,ISP Provider,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-05,
-Coffee,payment,4.50,Local Cafe,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-06,
-Freelance Work,deposit,500.00,Client X,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-10,
-Netflix,payment,15.99,Netflix,1047486e-8fbd-4d79-a203-5b4b54f9fc05,2023-12-15,"{""frequency"": ""monthly""}"
+Grocery Shopping,payment,150.50,Supermarket,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-01,
+Salary,deposit,5000.00,Employer Inc,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-01,
+Internet Bill,payment,60.00,ISP Provider,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-05,
+Coffee,payment,4.50,Local Cafe,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-06,
+Freelance Work,deposit,500.00,Client X,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-10,
+Netflix,payment,15.99,Netflix,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-15,"{""frequency"": ""monthly""}"
+Uber Ride,payment,24.50,Uber,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-16,
+Whole Foods,payment,89.32,Whole Foods Market,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-17,
+Gas Station,payment,45.00,Shell,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-18,
+Cinema,payment,30.00,AMC Theaters,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-19,
+Gym Membership,payment,49.99,Gold's Gym,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-20,"{""frequency"": ""monthly""}"
+Spotify,payment,9.99,Spotify,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-21,"{""frequency"": ""monthly""}"
+Electric Bill,payment,120.45,City Power,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-22,
+Water Bill,payment,35.20,City Water,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-10-22,
+Salary,deposit,5000.00,Employer Inc,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-01,
+Rent,payment,1500.00,Landlord,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-01,
+Coffee,payment,5.50,Starbucks,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-02,
+Lunch,payment,15.00,Chipotle,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-03,
+Amazon Purchase,payment,34.99,Amazon,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-04,
+Target Run,payment,76.54,Target,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-05,
+Gas Station,payment,42.10,Chevron,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-06,
+Dinner Out,payment,85.00,Italian Restaurant,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-07,
+Movie Night,payment,28.00,Regal Cinemas,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-08,
+Bookstore,payment,25.00,Barnes & Noble,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-09,
+Pharmacy,payment,12.45,CVS,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-10,
+Freelance Project,deposit,750.00,Client Y,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-11,
+Uber Eats,payment,32.15,Uber Eats,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-12,
+Phone Bill,payment,80.00,Verizon,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-13,
+Netflix,payment,15.99,Netflix,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-15,"{""frequency"": ""monthly""}"
+Gym Membership,payment,49.99,Gold's Gym,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-20,"{""frequency"": ""monthly""}"
+Spotify,payment,9.99,Spotify,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-21,"{""frequency"": ""monthly""}"
+Thanksgiving Grocery,payment,250.00,Whole Foods Market,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-25,
+Black Friday Shopping,payment,400.00,Best Buy,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-11-28,
+Cyber Monday,payment,150.00,Amazon,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-01,
+Salary,deposit,5000.00,Employer Inc,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-01,
+Rent,payment,1500.00,Landlord,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-01,
+Coffee,payment,4.75,Local Cafe,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-02,
+Lunch,payment,14.50,Subway,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-03,
+Gas Station,payment,40.00,Shell,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-04,
+Dinner,payment,60.00,Sushi Place,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-05,
+Gift Shopping,payment,120.00,Mall,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-10,
+Holiday Party,payment,50.00,Bar,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-12,
+Netflix,payment,15.99,Netflix,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-15,"{""frequency"": ""monthly""}"
+Bonus,deposit,2000.00,Employer Inc,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-15,
+Gym Membership,payment,49.99,Gold's Gym,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-20,"{""frequency"": ""monthly""}"
+Spotify,payment,9.99,Spotify,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-21,"{""frequency"": ""monthly""}"
+Last Minute Gifts,payment,80.00,Target,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-23,
+Christmas Dinner,payment,300.00,Grocery Store,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-24,
+Gas Station,payment,38.00,Exxon,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-26,
+Coffee,payment,5.00,Starbucks,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-27,
+Lunch,payment,16.00,Burger Joint,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-28,
+New Year Supplies,payment,100.00,Party City,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-30,
+Uber,payment,45.00,Uber,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-31,
+Champagne,payment,60.00,Liquor Store,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-31,
+Interest,interest,1.50,Bank,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-31,
+Transfer to Savings,transfer,1000.00,Savings Account,3bc14c11-42ab-47ac-847c-dccaf06bbeff,2025-12-31,

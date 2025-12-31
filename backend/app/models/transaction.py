@@ -1,6 +1,6 @@
 from typing import Optional, Any, Dict
 from uuid import UUID, uuid4
-from datetime import date
+from datetime import date as dt_date
 from decimal import Decimal
 from enum import Enum
 from sqlmodel import Field, SQLModel
@@ -20,7 +20,7 @@ class TransactionBase(SQLModel):
     amount: Decimal
     target_account: str
     account_id: UUID = Field(foreign_key="account.id")
-    date: date
+    date: dt_date
     recurrency: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSONB))
 
 class Transaction(TransactionBase, table=True):
@@ -35,7 +35,7 @@ class TransactionUpdate(SQLModel):
     amount: Optional[Decimal] = None
     target_account: Optional[str] = None
     account_id: Optional[UUID] = None
-    date: Optional[date] = None
+    date: Optional[dt_date] = None
     recurrency: Optional[Dict[str, Any]] = None
 
 class TransactionRead(TransactionBase):
