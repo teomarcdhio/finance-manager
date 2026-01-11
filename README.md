@@ -33,7 +33,16 @@ A lightweight personal finance management system featuring a FastAPI backend and
     ```
 
 2.  **Environment Setup:**
-    The project uses a `.env` file for configuration. A default one is provided, but you should ensure `DB_PASSWORD` and `JWT_SECRET` are set securely for production.
+    The project uses a `.env` file for configuration. A sample file `.env.sample` is provided. Copy it to `.env` and fill in your values:
+    ```bash
+    cp .env.sample .env
+    ```
+
+    **Important:** You must generate a secure `JWT_SECRET` for authentication to work securely. You can generate one using:
+    ```bash
+    openssl rand -hex 32
+    ```
+    Copy the output string into your `.env` file as the value for `JWT_SECRET`. This key is used to sign and verify user session tokens.
 
 3.  **Start the services:**
     ```bash
@@ -78,4 +87,3 @@ docker-compose up -d
 
 - **Backend:** http://localhost:8000/docs (FastAPI Swagger UI)
 - **Frontend:** http://localhost:3000
-- **Database UI:** http://localhost:5050 (Login with `admin@nivetek.local` / `admin`)
