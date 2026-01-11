@@ -368,12 +368,14 @@ export default function AccountPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number, _name, payload) => {
+                    formatter={(value, _name, payload) => {
                       const percentage = payload?.payload?.percentage ?? 0
+                      const rawValue = Array.isArray(value) ? value[0] : value
+                      const numericValue = typeof rawValue === "number" ? rawValue : Number(rawValue ?? 0)
                       const formattedValue = new Intl.NumberFormat("en-US", {
                         style: "currency",
                         currency: account.currency || "USD",
-                      }).format(value)
+                      }).format(Number.isFinite(numericValue) ? numericValue : 0)
                       return [`${formattedValue} (${percentage.toFixed(1)}%)`, payload?.payload?.name]
                     }}
                   />
@@ -424,12 +426,14 @@ export default function AccountPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number, _name, payload) => {
+                    formatter={(value, _name, payload) => {
                       const percentage = payload?.payload?.percentage ?? 0
+                      const rawValue = Array.isArray(value) ? value[0] : value
+                      const numericValue = typeof rawValue === "number" ? rawValue : Number(rawValue ?? 0)
                       const formattedValue = new Intl.NumberFormat("en-US", {
                         style: "currency",
                         currency: account.currency || "USD",
-                      }).format(value)
+                      }).format(Number.isFinite(numericValue) ? numericValue : 0)
                       return [`${formattedValue} (${percentage.toFixed(1)}%)`, payload?.payload?.name]
                     }}
                   />
