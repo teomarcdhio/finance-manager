@@ -12,10 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Plus } from "lucide-react"
+import { Loader2, Plus } from "lucide-react"
 import { accountService, Account } from "@/services/accounts"
 import { transactionService, Transaction } from "@/services/transactions"
-import { categoryService, Category } from "@/services/categories"
+import { categoryService } from "@/services/categories"
 import { authService } from "@/services/auth"
 import { CreateTransactionDialog } from "@/components/transactions/CreateTransactionDialog"
 import { EditTransactionDialog } from "@/components/transactions/EditTransactionDialog"
@@ -26,6 +26,8 @@ import { BulkDeleteTransactionsDialog } from "@/components/transactions/BulkDele
 import { Checkbox } from "@/components/ui/checkbox"
 import { useDateRange } from "@/context/DateRangeContext"
 import { format } from "date-fns"
+import { reportService } from "@/services/reports"
+import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell, Legend } from "recharts"
 
 export default function AccountPage() {
   const params = useParams()
@@ -38,6 +40,14 @@ export default function AccountPage() {
   const { date } = useDateRange()
   const [accountsMap, setAccountsMap] = useState<Record<string, string>>({})
   const [categoriesMap, setCategoriesMap] = useState<Record<string, string>>({})
+  const [targetAccountChartData, setTargetAccountChartData] = useState<Array<{ id: string; name: string; value: number; percentage: number }>>([])
+  const [loadingTargetAccounts, setLoadingTargetAccounts] = useState(false)
+  const [targetAccountsError, setTargetAccountsError] = useState<string | null>(null)
+  const [categoryChartData, setCategoryChartData] = useState<Array<{ id: string; name: string; value: number; percentage: number }>>([])
+  const [loadingCategoryChart, setLoadingCategoryChart] = useState(false)
+  const [categoryChartError, setCategoryChartError] = useState<string | null>(null)
+
+  const chartColors = ["#6366F1", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981", "#14B8A6", "#3B82F6", "#F97316", "#84CC16", "#F43F5E"]
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,6 +121,137 @@ export default function AccountPage() {
     }
   }
 
+  const fetchTargetAccountExpenses = async () => {
+    if (!accountId || !authService.isAuthenticated() || !date?.from || !date?.to) {
+      return
+    }
+
+    try {
+      setLoadingTargetAccounts(true)
+      setTargetAccountsError(null)
+
+      const limit = 500
+      let skip = 0
+      const totals: Record<string, number> = {}
+      let hasMore = true
+
+      while (hasMore) {
+        const response = await reportService.getTypeReport({
+          account_id: accountId,
+          start_date: format(date.from, "yyyy-MM-dd"),
+          end_date: format(date.to, "yyyy-MM-dd"),
+          types: ["expense"],
+          skip,
+          limit,
+        })
+
+        response.transactions.forEach((txn) => {
+          const targetId = txn.target_account_id ?? "unassigned"
+          const amount = Math.abs(Number(txn.amount))
+          totals[targetId] = (totals[targetId] ?? 0) + amount
+        })
+
+        if (response.transactions.length < limit) {
+          hasMore = false
+        } else {
+          skip += limit
+        }
+      }
+
+      const entries = Object.entries(totals)
+        .map(([id, value]) => ({ id, value }))
+        .filter((entry) => entry.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10)
+
+      const totalValue = entries.reduce((acc, entry) => acc + entry.value, 0)
+
+      const chartData = entries.map((entry) => {
+        const name = entry.id === "unassigned" ? "Unassigned" : accountsMap[entry.id] || "Unknown"
+        const percentage = totalValue > 0 ? (entry.value / totalValue) * 100 : 0
+        return {
+          id: entry.id,
+          name,
+          value: entry.value,
+          percentage,
+        }
+      })
+
+      setTargetAccountChartData(chartData)
+    } catch (error) {
+      console.error("Failed to load target account expenses", error)
+      setTargetAccountsError("Failed to load target account expenses.")
+      setTargetAccountChartData([])
+    } finally {
+      setLoadingTargetAccounts(false)
+    }
+  }
+
+  const fetchCategoryBreakdown = async () => {
+    if (!accountId || !authService.isAuthenticated() || !date?.from || !date?.to) {
+      return
+    }
+
+    try {
+      setLoadingCategoryChart(true)
+      setCategoryChartError(null)
+
+      const limit = 500
+      let skip = 0
+      const totals: Record<string, number> = {}
+      let hasMore = true
+
+      while (hasMore) {
+        const response = await transactionService.getTransactions({
+          account_id: accountId,
+          start_date: format(date.from, "yyyy-MM-dd"),
+          end_date: format(date.to, "yyyy-MM-dd"),
+          skip,
+          limit,
+        })
+
+        response.forEach((txn) => {
+          const categoryId = txn.category_id ?? "uncategorized"
+          const amount = Math.abs(Number(txn.amount))
+          totals[categoryId] = (totals[categoryId] ?? 0) + amount
+        })
+
+        if (response.length < limit) {
+          hasMore = false
+        } else {
+          skip += limit
+        }
+      }
+
+      const entries = Object.entries(totals)
+        .map(([id, value]) => ({ id, value }))
+        .filter((entry) => entry.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10)
+
+      const totalValue = entries.reduce((acc, entry) => acc + entry.value, 0)
+
+      const chartData = entries.map((entry) => {
+        const name = entry.id === "uncategorized" ? "Uncategorized" : categoriesMap[entry.id] || "Unknown"
+        const percentage = totalValue > 0 ? (entry.value / totalValue) * 100 : 0
+        return {
+          id: entry.id,
+          name,
+          value: entry.value,
+          percentage,
+        }
+      })
+
+      setCategoryChartData(chartData)
+    } catch (error) {
+      console.error("Failed to load category breakdown", error)
+      setCategoryChartError("Failed to load category breakdown.")
+      setCategoryChartData([])
+    } finally {
+      setLoadingCategoryChart(false)
+    }
+  }
+
   useEffect(() => {
     fetchAccount()
   }, [accountId, date])
@@ -123,6 +264,14 @@ export default function AccountPage() {
   useEffect(() => {
     fetchTransactions()
   }, [accountId, date, page])
+
+  useEffect(() => {
+    fetchTargetAccountExpenses()
+  }, [accountId, date, accountsMap])
+
+  useEffect(() => {
+    fetchCategoryBreakdown()
+  }, [accountId, date, categoriesMap])
 
   if (!account) {
     return <div className="p-8">Loading...</div>
@@ -145,7 +294,7 @@ export default function AccountPage() {
               )}
             </p>
             <p className="text-2xl font-bold text-foreground mt-2">
-              {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency || 'USD' }).format(account.current_balance)}
+              Balance: {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency || 'USD' }).format(account.current_balance)}
             </p>
           </div>
         </div>
@@ -185,22 +334,114 @@ export default function AccountPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Target Accounts %</CardTitle>
+            <CardTitle>Top Target Accounts (Expense)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-[200px] flex items-center justify-center bg-muted/20 rounded-md">
-              Pie Chart Placeholder
-            </div>
+          <CardContent className="h-[260px]">
+            {loadingTargetAccounts ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading target accounts...
+              </div>
+            ) : targetAccountsError ? (
+              <div className="h-full flex items-center justify-center text-sm text-destructive">
+                {targetAccountsError}
+              </div>
+            ) : targetAccountChartData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                No expense transactions with target accounts for the selected period.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={targetAccountChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={90}
+                    paddingAngle={2}
+                  >
+                    {targetAccountChartData.map((entry, index) => (
+                      <Cell key={entry.id} fill={chartColors[index % chartColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number, _name, payload) => {
+                      const percentage = payload?.payload?.percentage ?? 0
+                      const formattedValue = new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: account.currency || "USD",
+                      }).format(value)
+                      return [`${formattedValue} (${percentage.toFixed(1)}%)`, payload?.payload?.name]
+                    }}
+                  />
+                  <Legend
+                    layout="vertical"
+                    align="right"
+                    verticalAlign="middle"
+                    formatter={(value) => value as string}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Transactions by Type</CardTitle>
+            <CardTitle>Top Categories</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-[200px] flex items-center justify-center bg-muted/20 rounded-md">
-              Bar Chart Placeholder
-            </div>
+          <CardContent className="h-[260px]">
+            {loadingCategoryChart ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading categories...
+              </div>
+            ) : categoryChartError ? (
+              <div className="h-full flex items-center justify-center text-sm text-destructive">
+                {categoryChartError}
+              </div>
+            ) : categoryChartData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                No transactions for the selected period.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={90}
+                    paddingAngle={2}
+                  >
+                    {categoryChartData.map((entry, index) => (
+                      <Cell key={entry.id} fill={chartColors[index % chartColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number, _name, payload) => {
+                      const percentage = payload?.payload?.percentage ?? 0
+                      const formattedValue = new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: account.currency || "USD",
+                      }).format(value)
+                      return [`${formattedValue} (${percentage.toFixed(1)}%)`, payload?.payload?.name]
+                    }}
+                  />
+                  <Legend
+                    layout="vertical"
+                    align="right"
+                    verticalAlign="middle"
+                    formatter={(value) => value as string}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
