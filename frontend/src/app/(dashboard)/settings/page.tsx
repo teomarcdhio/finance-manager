@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Download, Loader2, User as UserIcon, Upload, AlertCircle, CheckCircle2 } from "lucide-react"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { Download, Loader2, User as UserIcon, AlertCircle, CheckCircle2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +22,9 @@ import {
 import { exportService } from "@/services/export"
 import { importService } from "@/services/import"
 import { authService, User } from "@/services/auth"
+import { accountService, Account } from "@/services/accounts"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { CreateAccountDialog } from "@/components/accounts/CreateAccountDialog"
 
 export default function SettingsPage() {
   const [downloading, setDownloading] = useState(false)
@@ -29,6 +32,9 @@ export default function SettingsPage() {
   const [restoreMessage, setRestoreMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [loadingAccounts, setLoadingAccounts] = useState(false)
+  const [accountsError, setAccountsError] = useState<string | null>(null)
   
   // Password update state
   const [password, setPassword] = useState("")
@@ -47,6 +53,24 @@ export default function SettingsPage() {
     }
     fetchUser()
   }, [])
+
+  const fetchAccounts = useCallback(async () => {
+    try {
+      setLoadingAccounts(true)
+      setAccountsError(null)
+      const data = await accountService.getAccounts()
+      setAccounts(data)
+    } catch (error) {
+      console.error("Failed to fetch accounts", error)
+      setAccountsError("Unable to load your accounts. Please try again.")
+    } finally {
+      setLoadingAccounts(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAccounts()
+  }, [fetchAccounts])
 
   const handleUpdatePassword = async () => {
     if (password !== confirmPassword) {
@@ -128,6 +152,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="data">Data Management</TabsTrigger>
+          <TabsTrigger value="accounts">Accounts</TabsTrigger>
         </TabsList>
         
         <TabsContent value="general" className="space-y-4">
@@ -292,6 +317,63 @@ export default function SettingsPage() {
                     {restoreMessage.text}
                   </AlertDescription>
                 </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="accounts" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-col gap-4 space-y-0 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle>User Accounts</CardTitle>
+                <CardDescription>Manage the financial accounts linked to your user profile.</CardDescription>
+              </div>
+              <CreateAccountDialog onSuccess={fetchAccounts} />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {accountsError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{accountsError}</AlertDescription>
+                </Alert>
+              )}
+
+              {loadingAccounts ? (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading accounts...
+                </div>
+              ) : accounts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No accounts found for your user. Create one to start tracking balances.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Bank</TableHead>
+                        <TableHead>Account #</TableHead>
+                        <TableHead>Currency</TableHead>
+                        <TableHead className="text-right">Current Balance</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {accounts.map((account) => (
+                        <TableRow key={account.id}>
+                          <TableCell className="font-medium">{account.name}</TableCell>
+                          <TableCell>{account.bank_name || '-'}</TableCell>
+                          <TableCell className="font-mono text-sm">{account.account_number || '—'}</TableCell>
+                          <TableCell>{account.currency || 'USD'}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency || 'USD' }).format(account.current_balance || 0)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>

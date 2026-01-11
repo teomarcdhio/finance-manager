@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Loader2, Plus } from "lucide-react"
+import { Loader2, Plus, AlertCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select"
 import { accountService } from "@/services/accounts"
 import { categoryService, Category } from "@/services/categories"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -49,6 +50,7 @@ export function CreateAccountDialog({ onSuccess }: CreateAccountDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -77,9 +79,11 @@ export function CreateAccountDialog({ onSuccess }: CreateAccountDialogProps) {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true)
+      setSubmitError(null)
+      const normalizedCategoryId = values.category_id && values.category_id !== "none" ? values.category_id : null
       await accountService.createAccount({
         ...values,
-        category_id: values.category_id === "none" ? null : values.category_id,
+        category_id: normalizedCategoryId,
         initial_balance: 0,
         balance_date: new Date().toISOString().split('T')[0],
         currency: "USD", // Default currency
@@ -89,6 +93,8 @@ export function CreateAccountDialog({ onSuccess }: CreateAccountDialogProps) {
       onSuccess()
     } catch (error) {
       console.error("Failed to create account", error)
+      const message = (error as any)?.response?.data?.detail || "Failed to create account. Please try again."
+      setSubmitError(message)
     } finally {
       setLoading(false)
     }
@@ -153,7 +159,10 @@ export function CreateAccountDialog({ onSuccess }: CreateAccountDialogProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <Select
+                    onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
+                    value={field.value || "none"}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
@@ -172,6 +181,13 @@ export function CreateAccountDialog({ onSuccess }: CreateAccountDialogProps) {
                 </FormItem>
               )}
             />
+            {submitError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{submitError}</AlertDescription>
+              </Alert>
+            )}
             <DialogFooter>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
