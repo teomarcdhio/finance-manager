@@ -11,6 +11,7 @@ export interface User {
   email: string;
   permission: string;
   label?: string;
+  is_default_password?: boolean;
 }
 
 export const authService = {
@@ -39,6 +40,11 @@ export const authService = {
 
   getMe: async (): Promise<User> => {
     const response = await api.get<User>('/users/me');
+    return response.data;
+  },
+
+  updateMe: async (data: Partial<User> & { password?: string }): Promise<User> => {
+    const response = await api.patch<User>('/users/me', data);
     return response.data;
   }
 };

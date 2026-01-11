@@ -29,6 +29,12 @@ export default function SettingsPage() {
   const [restoreMessage, setRestoreMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Password update state
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [updatingPassword, setUpdatingPassword] = useState(false)
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -41,6 +47,34 @@ export default function SettingsPage() {
     }
     fetchUser()
   }, [])
+
+  const handleUpdatePassword = async () => {
+    if (password !== confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'Passwords do not match.' })
+      return
+    }
+    
+    if (password.length < 8) {
+      setPasswordMessage({ type: 'error', text: 'Password must be at least 8 characters long.' })
+      return
+    }
+
+    try {
+      setUpdatingPassword(true)
+      setPasswordMessage(null)
+      const updatedUser = await authService.updateMe({ password })
+      setUser(updatedUser)
+      setPasswordMessage({ type: 'success', text: 'Password updated successfully.' })
+      setPassword("")
+      setConfirmPassword("")
+    } catch (error: any) {
+      console.error("Failed to update password", error)
+      const msg = error.response?.data?.detail || "Failed to update password.";
+      setPasswordMessage({ type: 'error', text: msg })
+    } finally {
+      setUpdatingPassword(false)
+    }
+  }
 
   const handleBackup = async () => {
     try {
@@ -115,6 +149,90 @@ export default function SettingsPage() {
                   <p className="text-xs text-muted-foreground uppercase">{user?.permission}</p>
                 </div>
               </div>
+
+              {user?.is_default_password && (
+                <div className="space-y-2">
+                  <h4 className="text-md font-medium">Update Password</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Ensure your account is using a strong, secure password.
+                  </p>
+                  
+                  <div className="grid gap-2">
+                    <Input 
+                      type="password" 
+                      placeholder="New password" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={updatingPassword}
+                    />
+                    <Input 
+                      type="password" 
+                      placeholder="Confirm new password" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={updatingPassword}
+                    />
+                  </div>
+
+                  <Button onClick={handleUpdatePassword} disabled={updatingPassword}>
+                    {updatingPassword ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      "Update Password"
+                    )}
+                  </Button>
+
+                  {passwordMessage && (
+                    <Alert variant={passwordMessage.type === 'error' ? "destructive" : "default"} className={passwordMessage.type === 'success' ? "border-green-500 text-green-700 bg-green-50" : ""}>
+                       {passwordMessage.type === 'error' ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                      <AlertTitle>{passwordMessage.type === 'error' ? "Error" : "Success"}</AlertTitle>
+                      <AlertDescription>
+                        {passwordMessage.text}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Change Password</CardTitle>
+              <CardDescription>
+                Update your password.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5 space-y-2">
+                <Input 
+                  type="password" 
+                  placeholder="New Password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                />
+                <Input 
+                  type="password" 
+                  placeholder="Confirm New Password" 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                />
+              </div>
+              
+              <Button onClick={handleUpdatePassword} disabled={updatingPassword || !password || !confirmPassword}>
+                {updatingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Password
+              </Button>
+
+              {passwordMessage && (
+                <Alert variant={passwordMessage.type === 'error' ? "destructive" : "default"} className={passwordMessage.type === 'success' ? "border-green-500 text-green-700 bg-green-50" : ""}>
+                   {passwordMessage.type === 'error' ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                  <AlertTitle>{passwordMessage.type === 'error' ? "Error" : "Success"}</AlertTitle>
+                  <AlertDescription>
+                    {passwordMessage.text}
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -179,6 +297,54 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {user?.is_default_password && (
+        <Card className="border-red-200 bg-red-50 mt-8">
+            <CardHeader>
+              <CardTitle className="text-red-700">Security Warning: Default Password Detected</CardTitle>
+              <CardDescription className="text-red-600">
+                You are currently using the default password ({`'admin'`}). Please update it immediately to secure your account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5 space-y-2">
+                <Input 
+                  type="password" 
+                  placeholder="New Password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-white" 
+                />
+                <Input 
+                  type="password" 
+                  placeholder="Confirm New Password" 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  className="bg-white"
+                />
+              </div>
+              
+              <Button 
+                onClick={handleUpdatePassword} 
+                disabled={updatingPassword || !password || !confirmPassword}
+                variant="destructive"
+              >
+                {updatingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Password
+              </Button>
+
+              {passwordMessage && (
+                <Alert variant={passwordMessage.type === 'error' ? "destructive" : "default"} className={passwordMessage.type === 'success' ? "border-green-500 text-green-700 bg-green-50" : "bg-white border-red-200"}>
+                   {passwordMessage.type === 'error' ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                  <AlertTitle>{passwordMessage.type === 'error' ? "Error" : "Success"}</AlertTitle>
+                  <AlertDescription>
+                    {passwordMessage.text}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+      )}
     </div>
   )
 }

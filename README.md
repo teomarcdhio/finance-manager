@@ -87,3 +87,18 @@ docker-compose up -d
 
 - **Backend:** http://localhost:8000/docs (FastAPI Swagger UI)
 - **Frontend:** http://localhost:3000
+
+
+## 8. Dev environment
+
+### Backend 
+```bash
+cd backend
+uv run fastapi run app/main.py --port 8000
+```
+### Frontend
+```bash
+cd frontend
+npm install 
+npm run dev
+```

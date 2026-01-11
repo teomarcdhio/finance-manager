@@ -30,3 +30,4 @@ class UserUpdate(SQLModel):
 
 class UserRead(UserBase):
     id: UUID
+    is_default_password: bool = False
