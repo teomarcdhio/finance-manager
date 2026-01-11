@@ -11,7 +11,8 @@ import {
   User, 
   Wallet,
   Landmark,
-  Tags
+  Tags,
+  BarChart3
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -30,6 +31,7 @@ import { authService } from "@/services/auth"
 
 export function Sidebar() {
   const [isAccountsOpen, setIsAccountsOpen] = useState(true)
+  const [isReportsOpen, setIsReportsOpen] = useState(false)
   const [accounts, setAccounts] = useState<Account[]>([])
 
   useEffect(() => {
@@ -97,6 +99,47 @@ export function Sidebar() {
             </div>
           )}
           
+          <Button
+            variant="ghost"
+            className="justify-between w-full"
+            onClick={() => setIsReportsOpen(!isReportsOpen)}
+          >
+            <span className="flex items-center">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Reports
+            </span>
+            {isReportsOpen ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
+          
+          {isReportsOpen && (
+            <div className="grid gap-1 pl-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start font-normal"
+                asChild
+              >
+                <Link href="/reports/category">
+                  By Category
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start font-normal"
+                asChild
+              >
+                <Link href="/reports/type">
+                  By Type
+                </Link>
+              </Button>
+            </div>
+          )}
+
           <Button variant="ghost" className="justify-start w-full" asChild>
             <Link href="/destination-accounts">
               <Landmark className="mr-2 h-4 w-4" />
@@ -108,6 +151,13 @@ export function Sidebar() {
             <Link href="/categories">
               <Tags className="mr-2 h-4 w-4" />
               Categories
+            </Link>
+          </Button>
+
+          <Button variant="ghost" className="justify-start w-full" asChild>
+            <Link href="/settings">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
             </Link>
           </Button>
 

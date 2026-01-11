@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/popover"
 import { accountService, Account } from "@/services/accounts"
 import { transactionService, Transaction } from "@/services/transactions"
+import { categoryService, Category } from "@/services/categories"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -52,6 +53,7 @@ const formSchema = z.object({
   target_account_id: z.string().uuid("Please select a target account"),
   account_id: z.string().uuid("Please select an account"),
   date: z.date(),
+  category_id: z.string().optional(),
 })
 
 interface EditTransactionDialogProps {
@@ -65,6 +67,7 @@ export function EditTransactionDialog({
 }: EditTransactionDialogProps) {
   const [open, setOpen] = useState(false)
   const [accounts, setAccounts] = useState<Account[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -76,23 +79,26 @@ export function EditTransactionDialog({
       target_account_id: transaction.target_account_id || "",
       account_id: transaction.account_id,
       date: new Date(transaction.date),
+      category_id: transaction.category_id || "",
     },
   })
 
   useEffect(() => {
-    const fetchAccounts = async () => {
+    const fetchData = async () => {
       try {
-        const [accountsData, destinationAccountsData] = await Promise.all([
+        const [accountsData, destinationAccountsData, categoriesData] = await Promise.all([
           accountService.getAccounts(),
-          accountService.getDestinationAccounts()
+          accountService.getDestinationAccounts(),
+          categoryService.getCategories()
         ])
         setAccounts([...accountsData, ...destinationAccountsData])
+        setCategories(categoriesData)
       } catch (error) {
-        console.error("Failed to fetch accounts", error)
+        console.error("Failed to fetch data", error)
       }
     }
     if (open) {
-      fetchAccounts()
+      fetchData()
     }
   }, [open])
 
@@ -105,6 +111,7 @@ export function EditTransactionDialog({
       target_account_id: transaction.target_account_id || "",
       account_id: transaction.account_id,
       date: new Date(transaction.date),
+      category_id: transaction.category_id || "",
     })
   }, [transaction, form])
 
@@ -127,6 +134,7 @@ export function EditTransactionDialog({
         target_account_id: values.target_account_id,
         account_id: values.account_id,
         date: format(values.date, "yyyy-MM-dd"),
+        category_id: values.category_id || undefined,
       })
       
       setOpen(false)
@@ -247,6 +255,31 @@ export function EditTransactionDialog({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="category_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
