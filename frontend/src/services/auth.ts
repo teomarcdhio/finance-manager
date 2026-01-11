@@ -7,11 +7,10 @@ export interface LoginResponse {
 
 export interface User {
   id: string;
+  username: string;
   email: string;
-  full_name?: string;
-  is_active: boolean;
-  is_superuser: boolean;
-  role: string;
+  permission: string;
+  label?: string;
 }
 
 export const authService = {

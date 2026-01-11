@@ -30,18 +30,18 @@ services:
     depends_on:
       - db
 
-  # --- Frontend (Next.js) ---
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #   container_name: nivetek-frontend
-  #   restart: always
-  #   environment:
-  #     NEXT_PUBLIC_API_URL: http://localhost:8000
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - backend
+  #--- Frontend (Next.js) ---
+  frontend:
+    build:
+      context: ./frontend
+    container_name: nivetek-frontend
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
