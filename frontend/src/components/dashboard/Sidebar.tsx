@@ -154,13 +154,6 @@ export function Sidebar() {
             </Link>
           </Button>
 
-          <Button variant="ghost" className="justify-start w-full" asChild>
-            <Link href="/settings">
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Link>
-          </Button>
-
           <Button variant="ghost" className="justify-start">
             <User className="mr-2 h-4 w-4" />
             User Management

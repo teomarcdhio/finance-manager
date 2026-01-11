@@ -88,11 +88,11 @@ async def create_transaction(
         transaction = Transaction.model_validate(transaction_in)
         
         # Enforce sign based on transaction type
-        if transaction.type in [TransactionType.PAYMENT, TransactionType.WITHDRAW, TransactionType.TRANSFER]:
+        if transaction.type in [TransactionType.EXPENSE, TransactionType.WITHDRAW, TransactionType.TRANSFER]:
             # These should be negative (outgoing)
             if transaction.amount > 0:
                 transaction.amount = -transaction.amount
-        elif transaction.type in [TransactionType.DEPOSIT, TransactionType.INTEREST]:
+        elif transaction.type in [TransactionType.INCOME]:
             # These should be positive (incoming)
             if transaction.amount < 0:
                 transaction.amount = -transaction.amount
@@ -219,11 +219,11 @@ async def import_transactions(
                 transaction = Transaction.model_validate(transaction_in)
                 
                 # Enforce sign based on transaction type
-                if transaction.type in [TransactionType.PAYMENT, TransactionType.WITHDRAW, TransactionType.TRANSFER]:
+                if transaction.type in [TransactionType.EXPENSE, TransactionType.WITHDRAW, TransactionType.TRANSFER]:
                     # These should be negative (outgoing)
                     if transaction.amount > 0:
                         transaction.amount = -transaction.amount
-                elif transaction.type in [TransactionType.DEPOSIT, TransactionType.INTEREST]:
+                elif transaction.type in [TransactionType.INCOME, TransactionType.INTEREST]:
                     # These should be positive (incoming)
                     if transaction.amount < 0:
                         transaction.amount = -transaction.amount

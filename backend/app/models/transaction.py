@@ -4,19 +4,18 @@ from datetime import date as dt_date
 from decimal import Decimal
 from enum import Enum
 from sqlmodel import Field, SQLModel
-from sqlalchemy import Column
+from sqlalchemy import Column, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 
 class TransactionType(str, Enum):
-    PAYMENT = "payment"
-    WITHDRAW = "withdraw"
-    DEPOSIT = "deposit"
-    INTEREST = "interest"
+    EXPENSE = "expense"
+    INCOME = "income"
     TRANSFER = "transfer"
+    WITHDRAW = "withdraw"
 
 class TransactionBase(SQLModel):
     name: str
-    type: TransactionType
+    type: TransactionType = Field(sa_column=Column(SAEnum(TransactionType, values_callable=lambda obj: [e.value for e in obj])))
     amount: Decimal
     target_account_id: Optional[UUID] = Field(default=None, foreign_key="account.id")
     account_id: UUID = Field(foreign_key="account.id")

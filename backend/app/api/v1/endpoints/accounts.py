@@ -344,7 +344,7 @@ async def get_account_balance(
             
             for txn in transactions:
                 print(f"Processing transaction: {txn.name}, Type: {txn.type}, Amount: {txn.amount}, Date: {txn.date}")
-                if txn.type in [TransactionType.DEPOSIT, TransactionType.INTEREST]:
+                if txn.type in [TransactionType.INCOME]:
                     balance += txn.amount
                     print(f"Added {txn.amount}. New Balance: {balance}")
                 else:
@@ -362,7 +362,7 @@ async def get_account_balance(
             transactions = result.scalars().all()
             
             for txn in transactions:
-                if txn.type in [TransactionType.DEPOSIT, TransactionType.INTEREST]:
+                if txn.type in [TransactionType.INCOME]:
                     balance -= txn.amount # Reverse the effect
                 else:
                     balance += txn.amount # Reverse the effect
@@ -407,7 +407,7 @@ async def get_account_transaction_sum(
         
         total = Decimal(0)
         for txn in transactions:
-            if txn.type in [TransactionType.DEPOSIT, TransactionType.INTEREST]:
+            if txn.type in [TransactionType.INCOME]:
                 total += txn.amount
             else:
                 total -= txn.amount

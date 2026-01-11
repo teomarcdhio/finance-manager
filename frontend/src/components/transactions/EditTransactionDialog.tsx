@@ -46,7 +46,7 @@ import { categoryService, Category } from "@/services/categories"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  type: z.enum(["payment", "withdraw", "deposit", "interest", "transfer"]),
+  type: z.enum(["expense", "withdraw", "income", "transfer"]),
   amount: z.string().refine((val) => !isNaN(Number(val)) && Number(val) !== 0, {
     message: "Amount must be a valid non-zero number",
   }),
@@ -121,7 +121,7 @@ export function EditTransactionDialog({
       
       // Handle sign based on type
       let amount = Number(values.amount)
-      if (["payment", "withdraw", "transfer"].includes(values.type)) {
+      if (["expense", "withdraw", "transfer"].includes(values.type)) {
         amount = -Math.abs(amount)
       } else {
         amount = Math.abs(amount)
@@ -172,10 +172,9 @@ export function EditTransactionDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="payment">Payment</SelectItem>
+                      <SelectItem value="expense">Expense</SelectItem>
                       <SelectItem value="withdraw">Withdraw</SelectItem>
-                      <SelectItem value="deposit">Deposit</SelectItem>
-                      <SelectItem value="interest">Interest</SelectItem>
+                      <SelectItem value="income">Income</SelectItem>
                       <SelectItem value="transfer">Transfer</SelectItem>
                     </SelectContent>
                   </Select>

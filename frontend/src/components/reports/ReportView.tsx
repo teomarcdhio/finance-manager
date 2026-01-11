@@ -40,10 +40,9 @@ interface ReportViewProps {
 }
 
 const TRANSACTION_TYPES = [
-  "payment",
+  "expense",
   "withdraw",
-  "deposit",
-  "interest",
+  "income",
   "transfer"
 ]
 
