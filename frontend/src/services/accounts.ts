@@ -19,8 +19,8 @@ export const accountService = {
     return response.data;
   },
 
-  getDestinationAccounts: async (): Promise<Account[]> => {
-    const response = await api.get<Account[]>('/accounts/destination');
+  getDestinationAccounts: async (params?: { skip?: number; limit?: number }): Promise<Account[]> => {
+    const response = await api.get<Account[]>('/accounts/destination', { params });
     return response.data;
   },
 

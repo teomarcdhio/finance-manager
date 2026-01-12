@@ -25,7 +25,7 @@
 ### Transaction
 *   `id`: UUID
 *   `name`: String
-*   `type`: Enum (`payment`, `withdraw`, `deposit`, `interest`, `transfer`)
+*   `type`: Enum (`payment`, `withdraw`, `deposit`, `transfer`)
 *   `amount`: Decimal
 *   `target_account`: String
 *   `account_id`: UUID

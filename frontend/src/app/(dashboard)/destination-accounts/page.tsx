@@ -30,23 +30,39 @@ export default function DestinationAccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
   const [balances, setBalances] = useState<Record<string, BalanceState>>({})
+  const [page, setPage] = useState(0)
+  const [hasNext, setHasNext] = useState(false)
+  const pageSize = 10
   const { date } = useDateRange()
 
-  const refreshAccounts = useCallback(async () => {
+  const fetchAccounts = useCallback(async (pageIndex: number) => {
     try {
       setLoading(true)
-      const data = await accountService.getDestinationAccounts()
+      const data = await accountService.getDestinationAccounts({ skip: pageIndex * pageSize, limit: pageSize })
+
+      // If we moved past the last page, step back one page and refetch
+      if (pageIndex > 0 && data.length === 0) {
+        setPage(pageIndex - 1)
+        return
+      }
+
       setAccounts(data)
+      setHasNext(data.length === pageSize)
+      setPage(pageIndex)
     } catch (error) {
       console.error("Failed to fetch destination accounts", error)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [pageSize])
+
+  const refreshAccounts = useCallback(() => {
+    fetchAccounts(0)
+  }, [fetchAccounts])
 
   useEffect(() => {
-    refreshAccounts()
-  }, [refreshAccounts])
+    fetchAccounts(page)
+  }, [fetchAccounts, page])
 
   useEffect(() => {
     // Reset previously fetched balances when the date range changes
@@ -196,6 +212,30 @@ export default function DestinationAccountsPage() {
               )}
             </TableBody>
           </Table>
+
+          {!loading && accounts.length > 0 && (
+            <div className="flex items-center justify-between pt-4">
+              <span className="text-sm text-muted-foreground">Page {page + 1}</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(Math.max(0, page - 1))}
+                  disabled={loading || page === 0}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(page + 1)}
+                  disabled={loading || !hasNext}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

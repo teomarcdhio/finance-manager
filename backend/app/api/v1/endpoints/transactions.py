@@ -184,6 +184,15 @@ async def import_transactions(
                         errors.append(f"Row {row_index}: Missing account_id")
                         continue
 
+                # Normalize transaction type (case-insensitive)
+                if row.get("type"):
+                    try:
+                        normalized_type = TransactionType(row["type"].lower())
+                        row["type"] = normalized_type
+                    except ValueError:
+                        errors.append(f"Row {row_index}: Invalid transaction type {row['type']}")
+                        continue
+
                 # Handle recurrency JSON string
                 if row.get("recurrency"):
                     try:
@@ -213,6 +222,24 @@ async def import_transactions(
         if len(owned_account_ids) != len(account_ids) and current_user.permission != UserRole.ADMIN:
             return {"status": "error", "message": "One or more accounts do not belong to the user"}
 
+        # Auto-assign category from destination account (target_account) when missing
+        target_account_ids = {t.target_account_id for t in transactions_to_create if t.target_account_id}
+        if target_account_ids:
+            category_query = select(Account.id, Account.category_id).where(Account.id.in_(target_account_ids))
+            result = await db.execute(category_query)
+            target_category_map = {}
+            for row in result:
+                target_category_map[row.id] = row.category_id
+                target_category_map[str(row.id)] = row.category_id  # handle string vs UUID lookups
+
+            for t in transactions_to_create:
+                if not t.category_id and t.target_account_id:
+                    key = t.target_account_id
+                    if key in target_category_map:
+                        t.category_id = target_category_map[key]
+                    elif str(key) in target_category_map:
+                        t.category_id = target_category_map[str(key)]
+
         # Insert all
         try:
             for transaction_in in transactions_to_create:
@@ -223,7 +250,7 @@ async def import_transactions(
                     # These should be negative (outgoing)
                     if transaction.amount > 0:
                         transaction.amount = -transaction.amount
-                elif transaction.type in [TransactionType.INCOME, TransactionType.INTEREST]:
+                elif transaction.type in [TransactionType.INCOME]:
                     # These should be positive (incoming)
                     if transaction.amount < 0:
                         transaction.amount = -transaction.amount
