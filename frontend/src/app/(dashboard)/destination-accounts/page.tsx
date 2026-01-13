@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -19,6 +19,7 @@ import { Loader2 } from "lucide-react"
 import { useDateRange } from "@/context/DateRangeContext"
 import { format } from "date-fns"
 import { transactionService } from "@/services/transactions"
+import { categoryService, Category } from "@/services/categories"
 
 type BalanceState = {
   value?: number
@@ -32,8 +33,25 @@ export default function DestinationAccountsPage() {
   const [balances, setBalances] = useState<Record<string, BalanceState>>({})
   const [page, setPage] = useState(0)
   const [hasNext, setHasNext] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
   const pageSize = 10
   const { date } = useDateRange()
+
+  const categoryNameById = useMemo(() => (
+    categories.reduce<Record<string, string>>((acc, category) => {
+      acc[category.id] = category.name
+      return acc
+    }, {})
+  ), [categories])
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const data = await categoryService.getCategories()
+      setCategories(data)
+    } catch (error) {
+      console.error("Failed to fetch categories", error)
+    }
+  }, [])
 
   const fetchAccounts = useCallback(async (pageIndex: number) => {
     try {
@@ -63,6 +81,10 @@ export default function DestinationAccountsPage() {
   useEffect(() => {
     fetchAccounts(page)
   }, [fetchAccounts, page])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
 
   useEffect(() => {
     // Reset previously fetched balances when the date range changes
@@ -142,6 +164,7 @@ export default function DestinationAccountsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Bank Name</TableHead>
                 <TableHead>Account Number</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead className="text-right">Balance</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -149,11 +172,11 @@ export default function DestinationAccountsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={6} className="text-center">Loading...</TableCell>
                 </TableRow>
               ) : accounts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">No accounts found</TableCell>
+                  <TableCell colSpan={6} className="text-center">No accounts found</TableCell>
                 </TableRow>
               ) : (
                 accounts.map((account) => {
@@ -166,6 +189,7 @@ export default function DestinationAccountsPage() {
                       <TableCell className="font-medium">{account.name}</TableCell>
                       <TableCell>{account.bank_name}</TableCell>
                       <TableCell>{account.account_number || "-"}</TableCell>
+                      <TableCell>{account.category_id ? categoryNameById[account.category_id] ?? "-" : "-"}</TableCell>
                       <TableCell className="text-right">
                         {hasValue ? (
                           <div className="flex items-center justify-end gap-2">
