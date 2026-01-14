@@ -14,12 +14,14 @@ import { accountService, Account } from "@/services/accounts"
 import { DestinationAccountDialog } from "@/components/accounts/DestinationAccountDialog"
 import { ImportDestinationAccountsDialog } from "@/components/accounts/ImportDestinationAccountsDialog"
 import { DeleteDestinationAccountDialog } from "@/components/accounts/DeleteDestinationAccountDialog"
+import { BulkDeleteDestinationAccountsDialog } from "@/components/accounts/BulkDeleteDestinationAccountsDialog"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { useDateRange } from "@/context/DateRangeContext"
 import { format } from "date-fns"
 import { transactionService } from "@/services/transactions"
 import { categoryService, Category } from "@/services/categories"
+import { Checkbox } from "@/components/ui/checkbox"
 
 type BalanceState = {
   value?: number
@@ -33,8 +35,9 @@ export default function DestinationAccountsPage() {
   const [balances, setBalances] = useState<Record<string, BalanceState>>({})
   const [page, setPage] = useState(0)
   const [hasNext, setHasNext] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const pageSize = 10
+  const pageSize = 50
   const { date } = useDateRange()
 
   const categoryNameById = useMemo(() => (
@@ -76,6 +79,7 @@ export default function DestinationAccountsPage() {
 
   const refreshAccounts = useCallback(() => {
     fetchAccounts(0)
+    setSelectedIds([])
   }, [fetchAccounts])
 
   useEffect(() => {
@@ -83,8 +87,28 @@ export default function DestinationAccountsPage() {
   }, [fetchAccounts, page])
 
   useEffect(() => {
+    setSelectedIds((prev) => prev.filter((id) => accounts.some((a) => a.id === id)))
+  }, [accounts])
+
+  useEffect(() => {
     fetchCategories()
   }, [fetchCategories])
+
+  const handleSelectAll = (checked: boolean | "indeterminate") => {
+    if (checked) {
+      setSelectedIds(accounts.map((a) => a.id))
+    } else {
+      setSelectedIds([])
+    }
+  }
+
+  const handleSelectOne = (checked: boolean | "indeterminate", id: string) => {
+    if (checked) {
+      setSelectedIds((prev) => [...prev, id])
+    } else {
+      setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id))
+    }
+  }
 
   useEffect(() => {
     // Reset previously fetched balances when the date range changes
@@ -148,6 +172,15 @@ export default function DestinationAccountsPage() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Destination Accounts</h2>
         <div className="flex items-center space-x-2">
+          {selectedIds.length > 0 && (
+            <BulkDeleteDestinationAccountsDialog
+              selectedIds={selectedIds}
+              onDeleted={refreshAccounts}
+              onOpenChange={(open) => {
+                if (!open) setSelectedIds([])
+              }}
+            />
+          )}
           <ImportDestinationAccountsDialog onImportSuccess={refreshAccounts} />
           <DestinationAccountDialog onSuccess={refreshAccounts} />
         </div>
@@ -161,6 +194,12 @@ export default function DestinationAccountsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>
+                  <Checkbox
+                    checked={accounts.length > 0 && selectedIds.length === accounts.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Bank Name</TableHead>
                 <TableHead>Account Number</TableHead>
@@ -172,11 +211,11 @@ export default function DestinationAccountsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={7} className="text-center">Loading...</TableCell>
                 </TableRow>
               ) : accounts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">No accounts found</TableCell>
+                  <TableCell colSpan={7} className="text-center">No accounts found</TableCell>
                 </TableRow>
               ) : (
                 accounts.map((account) => {
@@ -186,6 +225,12 @@ export default function DestinationAccountsPage() {
 
                   return (
                     <TableRow key={account.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.includes(account.id)}
+                          onCheckedChange={(checked) => handleSelectOne(checked, account.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{account.name}</TableCell>
                       <TableCell>{account.bank_name}</TableCell>
                       <TableCell>{account.account_number || "-"}</TableCell>

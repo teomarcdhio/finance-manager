@@ -97,7 +97,13 @@ async def read_destination_accounts(
     Retrieve destination accounts (accounts without user_id).
     """
     try:
-        query = select(Account).where(Account.user_id == None).offset(skip).limit(limit)
+        query = (
+            select(Account)
+            .where(Account.user_id == None)
+            .order_by(func.lower(Account.name))
+            .offset(skip)
+            .limit(limit)
+        )
         result = await db.execute(query)
         accounts = result.scalars().all()
         return accounts
@@ -610,6 +616,49 @@ async def delete_destination_account(
         await db.delete(account)
         await db.commit()
         return account
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/destination/bulk-delete", response_model=dict)
+async def bulk_delete_destination_accounts(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    account_ids: List[UUID],
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Delete multiple destination accounts.
+    """
+    try:
+        # Fetch destination accounts matching provided IDs
+        query = select(Account).where(Account.id.in_(account_ids), Account.user_id == None)
+        result = await db.execute(query)
+        accounts = result.scalars().all()
+
+        if not accounts:
+            return {"message": "No destination accounts found"}
+
+        # Ensure none of the accounts are used in transactions
+        txn_result = await db.execute(
+            select(Transaction.target_account_id)
+            .where(Transaction.target_account_id.in_(account_ids))
+            .limit(1)
+        )
+        txn_in_use = txn_result.scalars().first()
+        if txn_in_use:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot delete destination accounts because at least one is used in transactions.",
+            )
+
+        for account in accounts:
+            await db.delete(account)
+
+        await db.commit()
+        return {"message": f"Deleted {len(accounts)} destination accounts"}
     except HTTPException:
         raise
     except Exception as e:

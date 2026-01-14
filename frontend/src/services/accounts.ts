@@ -53,6 +53,11 @@ export const accountService = {
     await api.delete(`/accounts/destination/${id}`);
   },
 
+  bulkDeleteDestinationAccounts: async (ids: string[]): Promise<{ message: string }> => {
+    const response = await api.post(`/accounts/destination/bulk-delete`, ids);
+    return response.data;
+  },
+
   importDestinationAccounts: async (file: File): Promise<{ status: string; message: string; errors?: string[] }> => {
     const formData = new FormData();
     formData.append('file', file);
