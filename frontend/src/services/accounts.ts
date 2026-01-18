@@ -14,8 +14,8 @@ export interface Account {
 }
 
 export const accountService = {
-  getAccounts: async (): Promise<Account[]> => {
-    const response = await api.get<Account[]>('/accounts/');
+  getAccounts: async (params?: { skip?: number; limit?: number }): Promise<Account[]> => {
+    const response = await api.get<Account[]>('/accounts/', { params });
     return response.data;
   },
 

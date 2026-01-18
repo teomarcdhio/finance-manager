@@ -46,6 +46,9 @@ export default function AccountPage() {
   const [categoryChartData, setCategoryChartData] = useState<Array<{ id: string; name: string; value: number; percentage: number }>>([])
   const [loadingCategoryChart, setLoadingCategoryChart] = useState(false)
   const [categoryChartError, setCategoryChartError] = useState<string | null>(null)
+  const [incomeExpenseData, setIncomeExpenseData] = useState<Array<{ id: string; name: string; value: number; percentage: number }>>([])
+  const [loadingIncomeExpense, setLoadingIncomeExpense] = useState(false)
+  const [incomeExpenseError, setIncomeExpenseError] = useState<string | null>(null)
 
   const chartColors = ["#6366F1", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981", "#14B8A6", "#3B82F6", "#F97316", "#84CC16", "#F43F5E"]
 
@@ -53,8 +56,8 @@ export default function AccountPage() {
     const fetchData = async () => {
       try {
         const [accountsData, destinationAccountsData, categoriesData] = await Promise.all([
-          accountService.getAccounts(),
-          accountService.getDestinationAccounts(),
+          accountService.getAccounts({ limit: 10000 }),
+          accountService.getDestinationAccounts({ limit: 10000 }),
           categoryService.getCategories()
         ])
         
@@ -211,6 +214,10 @@ export default function AccountPage() {
         })
 
         response.forEach((txn) => {
+          // Exclude income from category breakdown
+          if (txn.type === "income") {
+            return
+          }
           const categoryId = txn.category_id ?? "uncategorized"
           const amount = Math.abs(Number(txn.amount))
           totals[categoryId] = (totals[categoryId] ?? 0) + amount
@@ -231,16 +238,22 @@ export default function AccountPage() {
 
       const totalValue = entries.reduce((acc, entry) => acc + entry.value, 0)
 
-      const chartData = entries.map((entry) => {
-        const name = entry.id === "uncategorized" ? "Uncategorized" : categoriesMap[entry.id] || "Unknown"
-        const percentage = totalValue > 0 ? (entry.value / totalValue) * 100 : 0
-        return {
-          id: entry.id,
-          name,
-          value: entry.value,
-          percentage,
-        }
-      })
+      const chartData = entries
+        // Exclude explicit Income category if present
+        .filter((entry) => {
+          const name = entry.id === "uncategorized" ? "Uncategorized" : categoriesMap[entry.id]
+          return (name?.toLowerCase() ?? "") !== "income"
+        })
+        .map((entry) => {
+          const name = entry.id === "uncategorized" ? "Uncategorized" : categoriesMap[entry.id] || "Unknown"
+          const percentage = totalValue > 0 ? (entry.value / totalValue) * 100 : 0
+          return {
+            id: entry.id,
+            name,
+            value: entry.value,
+            percentage,
+          }
+        })
 
       setCategoryChartData(chartData)
     } catch (error) {
@@ -249,6 +262,52 @@ export default function AccountPage() {
       setCategoryChartData([])
     } finally {
       setLoadingCategoryChart(false)
+    }
+  }
+
+  const fetchIncomeExpenseSplit = async () => {
+    if (!accountId || !authService.isAuthenticated() || !date?.from || !date?.to) {
+      return
+    }
+
+    try {
+      setLoadingIncomeExpense(true)
+      setIncomeExpenseError(null)
+
+      const commonPayload = {
+        account_id: accountId,
+        start_date: format(date.from, "yyyy-MM-dd"),
+        end_date: format(date.to, "yyyy-MM-dd"),
+        limit: 1, // we only need totals
+        skip: 0,
+      }
+
+      const [expenseReport, incomeReport] = await Promise.all([
+        reportService.getTypeReport({ ...commonPayload, types: ["expense"] }),
+        reportService.getTypeReport({ ...commonPayload, types: ["income"] }),
+      ])
+
+      const expenseTotal = Math.abs(Number(expenseReport.total ?? 0))
+      const incomeTotal = Math.abs(Number(incomeReport.total ?? 0))
+      const grandTotal = expenseTotal + incomeTotal
+
+      const entries = [
+        { id: "income", name: "Income", value: incomeTotal },
+        { id: "expense", name: "Expense", value: expenseTotal },
+      ].filter((entry) => entry.value > 0)
+
+      const chartData = entries.map((entry) => ({
+        ...entry,
+        percentage: grandTotal > 0 ? (entry.value / grandTotal) * 100 : 0,
+      }))
+
+      setIncomeExpenseData(chartData)
+    } catch (error) {
+      console.error("Failed to load income vs expense", error)
+      setIncomeExpenseError("Failed to load income vs expense.")
+      setIncomeExpenseData([])
+    } finally {
+      setLoadingIncomeExpense(false)
     }
   }
 
@@ -272,6 +331,10 @@ export default function AccountPage() {
   useEffect(() => {
     fetchCategoryBreakdown()
   }, [accountId, date, categoriesMap])
+
+  useEffect(() => {
+    fetchIncomeExpenseSplit()
+  }, [accountId, date])
 
   if (!account) {
     return <div className="p-8">Loading...</div>
@@ -331,7 +394,7 @@ export default function AccountPage() {
       </div>
 
       {/* Row 2: Graphs */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Top Target Accounts (Expense)</CardTitle>
@@ -448,6 +511,64 @@ export default function AccountPage() {
             )}
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Income vs Expense</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[260px]">
+            {loadingIncomeExpense ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading income vs expense...
+              </div>
+            ) : incomeExpenseError ? (
+              <div className="h-full flex items-center justify-center text-sm text-destructive">
+                {incomeExpenseError}
+              </div>
+            ) : incomeExpenseData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                No income or expense data for the selected period.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={incomeExpenseData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={90}
+                    paddingAngle={2}
+                  >
+                    {incomeExpenseData.map((entry, index) => (
+                      <Cell key={entry.id} fill={chartColors[index % chartColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, _name, payload) => {
+                      const percentage = payload?.payload?.percentage ?? 0
+                      const rawValue = Array.isArray(value) ? value[0] : value
+                      const numericValue = typeof rawValue === "number" ? rawValue : Number(rawValue ?? 0)
+                      const formattedValue = new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: account.currency || "USD",
+                      }).format(Number.isFinite(numericValue) ? numericValue : 0)
+                      return [`${formattedValue} (${percentage.toFixed(1)}%)`, payload?.payload?.name]
+                    }}
+                  />
+                  <Legend
+                    layout="vertical"
+                    align="right"
+                    verticalAlign="middle"
+                    formatter={(value) => value as string}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Row 3: Transactions List */}
@@ -487,7 +608,7 @@ export default function AccountPage() {
                   <TableCell>{transaction.name}</TableCell>
                   <TableCell>{transaction.target_account_id ? accountsMap[transaction.target_account_id] || 'Unknown' : '-'}</TableCell>
                   <TableCell className="capitalize">{transaction.type}</TableCell>
-                  <TableCell>{transaction.category_id ? categoriesMap[transaction.category_id] || 'Unknown' : '-'}</TableCell>
+                  <TableCell>{transaction.type === 'income' ? 'Income' : (transaction.category_id ? categoriesMap[transaction.category_id] || 'Unknown' : '-')}</TableCell>
                   <TableCell className={`text-right ${transaction.amount > 0 ? 'text-green-600' : ''}`}>
                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency || 'USD' }).format(transaction.amount)}
                   </TableCell>
