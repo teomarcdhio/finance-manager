@@ -124,9 +124,10 @@ export function DestinationAccountDialog({
       }
       setOpen(false)
       onSuccess()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to save account", error)
-      const errorMessage = error.response?.data?.detail || "Failed to save account. Please try again."
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = (error as any).response?.data?.detail || "Failed to save account. Please try again."
       setError(errorMessage)
     } finally {
       setLoading(false)

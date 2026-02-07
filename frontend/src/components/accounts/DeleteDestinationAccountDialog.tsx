@@ -37,9 +37,11 @@ export function DeleteDestinationAccountDialog({
       await accountService.deleteDestinationAccount(account.id)
       setOpen(false)
       onSuccess()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to delete account", error)
-      setError(error.response?.data?.detail || "Failed to delete account")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msg = (error as any).response?.data?.detail || "Failed to delete account"
+      setError(msg)
     } finally {
       setLoading(false)
     }
@@ -60,7 +62,7 @@ export function DeleteDestinationAccountDialog({
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete the account
-            "{account.name}" and all its associated data.
+            &quot;{account.name}&quot; and all its associated data.
           </AlertDialogDescription>
           {error && (
             <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md mt-2">

@@ -74,7 +74,7 @@ export function EditTransactionDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: transaction.name,
-      type: transaction.type as any,
+      type: transaction.type as "income" | "expense",
       amount: Math.abs(transaction.amount).toString(),
       target_account_id: transaction.target_account_id || "",
       account_id: transaction.account_id,
@@ -106,7 +106,7 @@ export function EditTransactionDialog({
   useEffect(() => {
     form.reset({
       name: transaction.name,
-      type: transaction.type as any,
+      type: transaction.type as "income" | "expense",
       amount: Math.abs(transaction.amount).toString(),
       target_account_id: transaction.target_account_id || "",
       account_id: transaction.account_id,

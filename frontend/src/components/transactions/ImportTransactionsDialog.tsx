@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Loader2, Upload, FileUp } from "lucide-react"
+import { Loader2, Upload } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -73,8 +73,8 @@ export function ImportTransactionsDialog({
           setSuccess(null)
         }, 1500)
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to import transactions")
+    } catch (err: unknown) {
+      setError((err as Error).message || "Failed to import transactions")
     } finally {
       setLoading(false)
     }
@@ -101,7 +101,8 @@ export function ImportTransactionsDialog({
             <FormField
               control={form.control}
               name="file"
-              render={({ field: { onChange, value, ...field } }) => (
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              render={({ field: { onChange, value: _value, ...field } }) => (
                 <FormItem>
                   <FormLabel>CSV File</FormLabel>
                   <FormControl>
