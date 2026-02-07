@@ -91,8 +91,9 @@ export function CreateAccountDialog({ onSuccess }: CreateAccountDialogProps) {
       setOpen(false)
       form.reset()
       onSuccess()
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to create account", error)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const message = (error as any)?.response?.data?.detail || "Failed to create account. Please try again."
       setSubmitError(message)
     } finally {

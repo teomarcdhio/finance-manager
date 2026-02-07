@@ -12,7 +12,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!authService.isAuthenticated()) {
       router.push("/login")
     } else {
-      setAuthorized(true)
+      // Avoid calling setState synchronously in effect
+      setTimeout(() => setAuthorized(true), 0)
     }
   }, [router])
 

@@ -9,7 +9,7 @@ export interface Transaction {
   account_id: string;
   date: string;
   category_id?: string;
-  recurrency?: any;
+  recurrency?: Record<string, unknown>;
 }
 
 export const transactionService = {
@@ -39,12 +39,12 @@ export const transactionService = {
     return response.data;
   },
 
-  bulkDeleteTransactions: async (ids: string[]): Promise<any> => {
+  bulkDeleteTransactions: async (ids: string[]): Promise<unknown> => {
     const response = await api.post('/transactions/bulk-delete', ids);
     return response.data;
   },
 
-  importTransactions: async (file: File, accountId?: string): Promise<any> => {
+  importTransactions: async (file: File, accountId?: string): Promise<{ status: string; message: string; errors?: string[] }> => {
     const formData = new FormData();
     formData.append('file', file);
     

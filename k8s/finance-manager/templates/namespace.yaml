@@ -1,0 +1,9 @@
+{{- if .Values.istio.enabled -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    istio-injection: {{ .Values.istio.injection | default "enabled" }}
+    {{- include "finance-manager.labels" . | nindent 4 }}
+{{- end }}

@@ -91,9 +91,10 @@ export default function SettingsPage() {
       setPasswordMessage({ type: 'success', text: 'Password updated successfully.' })
       setPassword("")
       setConfirmPassword("")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to update password", error)
-      const msg = error.response?.data?.detail || "Failed to update password.";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msg = (error as any).response?.data?.detail || "Failed to update password.";
       setPasswordMessage({ type: 'error', text: msg })
     } finally {
       setUpdatingPassword(false)
@@ -130,9 +131,10 @@ export default function SettingsPage() {
         text: `Restore successful! Processed ${result.counts.categories} categories, ${result.counts.accounts} accounts, and ${result.counts.transactions} transactions.` 
       })
       if (fileInputRef.current) fileInputRef.current.value = ''
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to restore backup", error)
-      const msg = error.response?.data?.detail || "Failed to restore backup. Please check the file format.";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msg = (error as any).response?.data?.detail || "Failed to restore backup. Please check the file format.";
       setRestoreMessage({ type: 'error', text: msg })
     } finally {
       setRestoring(false)
@@ -287,7 +289,7 @@ export default function SettingsPage() {
               <CardTitle>Restore Data</CardTitle>
               <CardDescription>
                 Restore your data from a backup ZIP file. 
-                <span className="block text-red-500 font-medium mt-1">Warning: This will add missing records and update existing ones. It does NOT delete existing data that isn't in the backup.</span>
+                <span className="block text-red-500 font-medium mt-1">Warning: This will add missing records and update existing ones. It does NOT delete existing data that isn&apos;t in the backup.</span>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

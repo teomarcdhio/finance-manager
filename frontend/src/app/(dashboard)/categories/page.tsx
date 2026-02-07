@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { categoryService, Category } from "@/services/categories"
 import { CategoryDialog } from "@/components/categories/CategoryDialog"
 import { ImportCategoriesDialog } from "@/components/categories/ImportCategoriesDialog"
-import { Loader2, Trash2 } from "lucide-react"
+import { Trash2 } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,

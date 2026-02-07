@@ -1,0 +1,31 @@
+{{- if .Values.istio.enabled -}}
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Values.istio.virtualService.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  hosts:
+  {{- range .Values.istio.virtualService.hosts }}
+  - {{ . | quote }}
+  {{- end }}
+  gateways:
+  - {{ .Values.istio.gateway.name }}
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1
+    route:
+    - destination:
+        host: {{ include "finance-manager.fullname" . }}-backend
+        port:
+          number: {{ .Values.backend.service.port }}
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: {{ include "finance-manager.fullname" . }}-frontend
+        port:
+          number: {{ .Values.frontend.service.port }}
+{{- end }}

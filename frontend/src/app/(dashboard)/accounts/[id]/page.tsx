@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Loader2, Plus } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { accountService, Account } from "@/services/accounts"
 import { transactionService, Transaction } from "@/services/transactions"
 import { categoryService } from "@/services/categories"
@@ -95,7 +95,7 @@ export default function AccountPage() {
     }
   }
 
-  const fetchAccount = async () => {
+  const fetchAccount = useCallback(async () => {
     if (accountId && authService.isAuthenticated()) {
       try {
         const endDate = date?.to ? format(date.to, "yyyy-MM-dd") : undefined
@@ -105,9 +105,9 @@ export default function AccountPage() {
         console.error("Failed to fetch account", error)
       }
     }
-  }
+  }, [accountId, date])
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     if (accountId && authService.isAuthenticated() && date?.from && date?.to) {
       try {
         const data = await transactionService.getTransactions({
@@ -122,9 +122,9 @@ export default function AccountPage() {
         console.error("Failed to fetch transactions", error)
       }
     }
-  }
+  }, [accountId, date, page, pageSize])
 
-  const fetchTargetAccountExpenses = async () => {
+  const fetchTargetAccountExpenses = useCallback(async () => {
     if (!accountId || !authService.isAuthenticated() || !date?.from || !date?.to) {
       return
     }
@@ -188,9 +188,9 @@ export default function AccountPage() {
     } finally {
       setLoadingTargetAccounts(false)
     }
-  }
+  }, [accountId, date, accountsMap])
 
-  const fetchCategoryBreakdown = async () => {
+  const fetchCategoryBreakdown = useCallback(async () => {
     if (!accountId || !authService.isAuthenticated() || !date?.from || !date?.to) {
       return
     }
@@ -263,9 +263,9 @@ export default function AccountPage() {
     } finally {
       setLoadingCategoryChart(false)
     }
-  }
+  }, [accountId, date, categoriesMap])
 
-  const fetchIncomeExpenseSplit = async () => {
+  const fetchIncomeExpenseSplit = useCallback(async () => {
     if (!accountId || !authService.isAuthenticated() || !date?.from || !date?.to) {
       return
     }
@@ -309,11 +309,11 @@ export default function AccountPage() {
     } finally {
       setLoadingIncomeExpense(false)
     }
-  }
+  }, [accountId, date])
 
   useEffect(() => {
     fetchAccount()
-  }, [accountId, date])
+  }, [fetchAccount])
 
   // Reset page when date range changes
   useEffect(() => {
@@ -322,19 +322,19 @@ export default function AccountPage() {
 
   useEffect(() => {
     fetchTransactions()
-  }, [accountId, date, page])
+  }, [fetchTransactions])
 
   useEffect(() => {
     fetchTargetAccountExpenses()
-  }, [accountId, date, accountsMap])
+  }, [fetchTargetAccountExpenses])
 
   useEffect(() => {
     fetchCategoryBreakdown()
-  }, [accountId, date, categoriesMap])
+  }, [fetchCategoryBreakdown])
 
   useEffect(() => {
     fetchIncomeExpenseSplit()
-  }, [accountId, date])
+  }, [fetchIncomeExpenseSplit])
 
   if (!account) {
     return <div className="p-8">Loading...</div>

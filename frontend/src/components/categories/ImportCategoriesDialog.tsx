@@ -69,8 +69,8 @@ export function ImportCategoriesDialog({
           setSuccess(null)
         }, 1500)
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to import categories")
+    } catch (err: unknown) {
+      setError((err as Error).message || "Failed to import categories")
     } finally {
       setLoading(false)
     }
@@ -100,7 +100,8 @@ export function ImportCategoriesDialog({
             <FormField
               control={form.control}
               name="file"
-              render={({ field: { value, onChange, ...fieldProps } }) => (
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              render={({ field: { value: _value, onChange, ...fieldProps } }) => (
                 <FormItem>
                   <FormLabel>CSV File</FormLabel>
                   <FormControl>

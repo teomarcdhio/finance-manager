@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { format } from "date-fns"
 import { Loader2, ChevronDown } from "lucide-react"
 
@@ -71,9 +71,10 @@ export function ReportView({ type }: ReportViewProps) {
     fetchData()
   }, [type])
 
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     setLoading(true)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const params: any = {
         start_date: date?.from ? format(date.from, 'yyyy-MM-dd') : undefined,
         end_date: date?.to ? format(date.to, 'yyyy-MM-dd') : undefined,
@@ -98,11 +99,11 @@ export function ReportView({ type }: ReportViewProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [date, selectedAccount, selectedItems, type])
 
   useEffect(() => {
     fetchReport()
-  }, [date, selectedAccount, selectedItems, type])
+  }, [fetchReport])
 
   const toggleItem = (id: string) => {
     setSelectedItems(prev => 
