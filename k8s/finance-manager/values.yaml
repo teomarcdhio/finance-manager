@@ -108,3 +108,8 @@ istio:
     name: finance-manager
     hosts:
       - "finance-manager.internal.nivetek.com"
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
