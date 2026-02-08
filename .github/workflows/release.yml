@@ -33,15 +33,7 @@ jobs:
       - name: Read backend pyproject version
         id: backend_ver
         run: |
-          ver=$(python - <<'PY'
-            import re,sys
-            txt=open('backend/pyproject.toml').read()
-            m=re.search(r"version\s*=\s*[\"']([^\"']+)[\"']", txt)
-            if not m:
-                sys.exit(1)
-            print(m.group(1))
-            PY
-            )
+          ver=$(grep 'version =' backend/pyproject.toml | head -n1 | cut -d '"' -f 2)
           echo "version=$ver" >> $GITHUB_OUTPUT
 
       - name: Build and push backend image
