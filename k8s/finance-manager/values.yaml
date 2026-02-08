@@ -18,6 +18,10 @@ securityContext: {}
 
 backend:
   replicaCount: 1
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
   image:
     repository: ghcr.io/teomarcdhio/finance-manager-backend
     pullPolicy: Always
@@ -51,6 +55,10 @@ backend:
 
 frontend:
   replicaCount: 1
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3000"
+    prometheus.io/path: "/api/metrics"
   image:
     repository: ghcr.io/teomarcdhio/finance-manager-frontend
     pullPolicy: Always
