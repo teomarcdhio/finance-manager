@@ -15,10 +15,13 @@ spec:
       app.kubernetes.io/component: backend
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
+        {{- with .Values.backend.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
         {{- include "finance-manager.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
